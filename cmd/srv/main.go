@@ -19,7 +19,7 @@ func main() {
 
 func run() error {
 	flag.Parse()
-	hostname := "bookclub.exe.xyz:8000"
+	hostname := "bookclub.ffxxi.com"
 	server, err := srv.New("db.sqlite3", hostname)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
