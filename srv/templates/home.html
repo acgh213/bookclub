@@ -14,10 +14,10 @@
         <p class="stat"><strong>{{.SubmissionCount}}</strong> books submitted so far</p>
         <a href="/submit" class="btn btn-primary">Submit a Book</a>
     {{else if eq .CurrentRound.Status "voting_open"}}
-        <div class="status-badge status-voting">Voting Open</div>
-        <p>Time to vote on which book we'll read next!</p>
-        <p class="stat"><strong>{{.SubmissionCount}}</strong> books | <strong>{{.VoteCount}}</strong> votes</p>
-        <a href="/vote/{{.CurrentRound.VoteCode}}" class="btn btn-primary">Vote Now</a>
+        <div class="status-badge status-voting">Wheel Spin Open</div>
+        <p>Time to spin the wheel and pick our next book!</p>
+        <p class="stat"><strong>{{.SubmissionCount}}</strong> books in the running</p>
+        <a href="/vote/{{.CurrentRound.VoteCode}}" class="btn btn-primary">Spin the Wheel</a>
     {{else if eq .CurrentRound.Status "closed"}}
         <div class="status-badge status-closed">Voting Closed</div>
         <p>This round has ended. Check out the results!</p>
@@ -70,13 +70,13 @@
     <h3>How It Works</h3>
     <ol class="how-it-works">
         <li><strong>Submit</strong> – Share a book you'd love to read together</li>
-        <li><strong>Vote</strong> – Rank all submitted books using ranked choice voting</li>
-        <li><strong>Winner</strong> – The most popular book wins and we read it together</li>
+        <li><strong>Spin</strong> – Give the wheel a spin to pick the next book</li>
+        <li><strong>Winner</strong> – Whatever the wheel lands on, we read it together</li>
         <li><strong>Read</strong> – Join the discussion and enjoy the book club vibes</li>
     </ol>
 </div>
 
 <div class="otter-box">
-    <p>Every otter gets one vote per round 🦦</p>
+    <p>Every otter gets a spin 🦦</p>
 </div>
 {{end}}

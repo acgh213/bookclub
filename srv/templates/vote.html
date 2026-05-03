@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="hero">
-    <h2 class="hero-title">Vote for Our Next Book</h2>
-    <p class="hero-subtitle">Rank all books from favorite to least favorite</p>
+    <h2 class="hero-title">Pick Our Next Book</h2>
+    <p class="hero-subtitle">Give the wheel a spin!</p>
 </div>
 
 {{if .Error}}
@@ -12,76 +12,216 @@
 
 {{if .Success}}
 <div class="alert alert-success">
-    <strong>Vote Submitted!</strong> {{.Success}}
+    <strong>{{.Success}}</strong>
 </div>
 <div class="card">
-    <p>Thanks for voting! We'll announce the winner soon.</p>
+    <p>The wheel has spoken!</p>
     <a href="/" class="btn btn-primary">Back to Home</a>
 </div>
 {{else if .Submissions}}
 <div class="card">
     <h3>Round: {{.Round.Title}}</h3>
-    <p>Rank these {{len .Submissions}} books in order of preference. Your #1 choice is your top pick.</p>
-    
-    <div class="voting-info">
-        <div class="info-box">
-            <strong>How Ranked Choice Voting Works:</strong>
-            <ul>
-                <li>Rank all books from 1 (favorite) to {{len .Submissions}} (least favorite)</li>
-                <li>If your first choice doesn't win, your vote goes to your next choice</li>
-                <li>The book with the most support wins</li>
-            </ul>
-        </div>
+    <p>{{len .Submissions}} books in the running. Spin the wheel to find out what we're reading next!</p>
+</div>
+
+<div class="wheel-wrapper">
+    <div class="wheel-pointer"></div>
+    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+</div>
+
+<div class="wheel-controls">
+    <button id="spinBtn" class="btn btn-primary btn-large">Spin the Wheel</button>
+</div>
+
+<div id="wheelResult" class="wheel-result" style="display:none;">
+    <div class="card winner-card">
+        <div class="winner-banner" id="resultTitle"></div>
+        <p class="book-author" id="resultAuthor"></p>
+        <p class="book-submitter" id="resultSubmitter"></p>
     </div>
-
-    <form method="POST" action="/vote/{{.Round.VoteCode}}" class="form vote-form">
-        <div class="form-group">
-            <label for="nickname">Your Nickname</label>
-            <input type="text" id="nickname" name="nickname" required 
-                   placeholder="OtterLover42">
-            <small>Use the same nickname you submitted with (if you submitted a book)</small>
-        </div>
-
-        <div class="ranking-container">
-            <h4>Rank the Books</h4>
-            <p class="ranking-instruction">Drag to reorder, or type a rank number from 1 to {{len .Submissions}}</p>
-            
-            <div class="book-rankings" id="bookRankings">
-                {{range $index, $sub := .Submissions}}
-                <div class="ranking-item" data-submission-id="{{$sub.ID}}">
-                    <div class="rank-input">
-                        <label for="rank_{{$sub.ID}}">#</label>
-                        <input type="number" 
-                               id="rank_{{$sub.ID}}" 
-                               name="rank_{{$sub.ID}}" 
-                               min="1" 
-                               max="{{len $.Submissions}}" 
-                               required
-                               class="rank-number">
-                    </div>
-                    <div class="book-details">
-                        <div class="book-title">{{$sub.BookTitle}}</div>
-                        <div class="book-author">by {{$sub.BookAuthor}}</div>
-                        <div class="book-submitter">Suggested by {{$sub.Nickname}}</div>
-                    </div>
-                </div>
-                {{end}}
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-large">
-            Submit Your Rankings
-        </button>
-    </form>
 </div>
 
-<div class="otter-box">
-    <p><strong>Remember:</strong> Each rank number can only be used once. Make sure you rank all books.</p>
+<div class="card info-card">
+    <h3>The Books</h3>
+    <div class="wheel-book-list">
+        {{range .Submissions}}
+        <div class="wheel-book-item">
+            <strong>{{.BookTitle}}</strong>
+            <span class="book-author">by {{.BookAuthor}}</span>
+            <span class="book-submitter">— {{.Nickname}}</span>
+        </div>
+        {{end}}
+    </div>
 </div>
+
+<script>
+(function() {
+    const books = [
+        {{range .Submissions}}
+        {
+            id: {{.ID}},
+            title: {{jsonStr .BookTitle}},
+            author: {{jsonStr .BookAuthor}},
+            nickname: {{jsonStr .Nickname}}
+        },
+        {{end}}
+    ];
+
+    const colors = [
+        '#FFB6C1', '#E6E6FA', '#B0E0E6', '#98FF98',
+        '#FFFACD', '#FFDAB9', '#FF8FAB', '#C9A0DC',
+        '#87CEEB', '#66CDAA', '#FFE4B5', '#DDA0DD',
+        '#F0E68C', '#AFEEEE', '#FFC0CB', '#D8BFD8'
+    ];
+    const textColors = [
+        '#8B3A5C', '#5B4A6F', '#2C5F7A', '#2D5A3D',
+        '#7A6B2E', '#8B5E3C', '#8B2252', '#5B3A8F',
+        '#2C5F7A', '#2D5A3D', '#7A6B2E', '#6B3A7A',
+        '#6B5E2E', '#2D5A5A', '#8B3A5C', '#5B4A6F'
+    ];
+
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const resultDiv = document.getElementById('wheelResult');
+
+    const size = 500;
+    const center = size / 2;
+    const radius = size / 2 - 10;
+    const n = books.length;
+    const arc = (2 * Math.PI) / n;
+
+    let currentAngle = 0;
+    let spinning = false;
+
+    function drawWheel(angle) {
+        ctx.clearRect(0, 0, size, size);
+
+        // Shadow
+        ctx.save();
+        ctx.shadowColor = 'rgba(180,160,220,0.4)';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.restore();
+
+        for (let i = 0; i < n; i++) {
+            const startAngle = angle + i * arc;
+            const endAngle = startAngle + arc;
+
+            // Slice
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.arc(center, center, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Text
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.rotate(startAngle + arc / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = textColors[i % textColors.length];
+
+            const maxTextLen = radius - 40;
+            let fontSize = 14;
+            if (n > 10) fontSize = 11;
+            else if (n > 6) fontSize = 12;
+            ctx.font = '700 ' + fontSize + 'px Quicksand, sans-serif';
+
+            let title = books[i].title;
+            // Truncate if needed
+            while (ctx.measureText(title).width > maxTextLen && title.length > 3) {
+                title = title.slice(0, -4) + '\u2026';
+            }
+            ctx.fillText(title, radius - 20, fontSize / 3);
+            ctx.restore();
+        }
+
+        // Center circle
+        ctx.beginPath();
+        ctx.arc(center, center, 28, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.strokeStyle = '#E0D4F5';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.font = '700 20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#5B4A6F';
+        ctx.fillText('\uD83E\uDDA6', center, center);
+    }
+
+    function getWinnerIndex(angle) {
+        // The pointer is at the top (3*PI/2 = 270deg = 12 o'clock)
+        const pointerAngle = 3 * Math.PI / 2;
+        // Normalize the offset
+        let offset = (pointerAngle - (angle % (2 * Math.PI))) % (2 * Math.PI);
+        if (offset < 0) offset += 2 * Math.PI;
+        return Math.floor(offset / arc) % n;
+    }
+
+    function spin() {
+        if (spinning) return;
+        spinning = true;
+        spinBtn.disabled = true;
+        spinBtn.textContent = 'Spinning...';
+        resultDiv.style.display = 'none';
+
+        // Random spin: 5-10 full rotations + random offset
+        const extraTurns = (5 + Math.random() * 5) * 2 * Math.PI;
+        const randomOffset = Math.random() * 2 * Math.PI;
+        const totalSpin = extraTurns + randomOffset;
+        const duration = 4000 + Math.random() * 2000;
+        const startAngle = currentAngle;
+        const startTime = performance.now();
+
+        function animate(now) {
+            const elapsed = now - startTime;
+            const t = Math.min(elapsed / duration, 1);
+            // Ease out cubic
+            const eased = 1 - Math.pow(1 - t, 3);
+            currentAngle = startAngle + totalSpin * eased;
+
+            drawWheel(currentAngle);
+
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                spinning = false;
+                spinBtn.disabled = false;
+                spinBtn.textContent = 'Spin Again';
+
+                const winIdx = getWinnerIndex(currentAngle);
+                const winner = books[winIdx];
+
+                document.getElementById('resultTitle').textContent = winner.title;
+                document.getElementById('resultAuthor').textContent = 'by ' + winner.author;
+                document.getElementById('resultSubmitter').textContent = 'Suggested by ' + winner.nickname;
+                resultDiv.style.display = 'block';
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    spinBtn.addEventListener('click', spin);
+    drawWheel(currentAngle);
+})();
+</script>
 {{else}}
 <div class="card">
-    <h3>Voting Closed</h3>
-    <p>Voting is not currently open for this round. Check back later!</p>
+    <h3>Not Available</h3>
+    <p>This round isn't open for spinning yet. Check back later!</p>
     <a href="/" class="btn btn-primary">Back to Home</a>
 </div>
 {{end}}

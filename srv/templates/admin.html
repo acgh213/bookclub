@@ -50,7 +50,7 @@
 
             {{if eq .Round.Status "voting_open"}}
             <div class="vote-link-box">
-                <strong>Voting Link:</strong> 
+                <strong>Wheel Link:</strong> 
                 <code>https://{{$.Hostname}}/vote/{{.Round.VoteCode}}</code>
             </div>
             {{end}}
@@ -59,7 +59,7 @@
                 <form method="POST" action="/admin/{{$.AdminToken}}/round/{{.Round.ID}}/status" style="display: inline;">
                     {{if eq .Round.Status "submissions_open"}}
                     <input type="hidden" name="status" value="voting_open">
-                    <button type="submit" class="btn btn-warning">Open Voting</button>
+                    <button type="submit" class="btn btn-warning">Open the Wheel</button>
                     {{else if eq .Round.Status "voting_open"}}
                     <input type="hidden" name="status" value="closed">
                     <button type="submit" class="btn btn-danger">Close Round</button>

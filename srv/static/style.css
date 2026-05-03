@@ -583,6 +583,81 @@ main {
   padding: 0.25rem;
 }
 
+/* --- Wheel Picker --- */
+.wheel-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem auto;
+  max-width: 500px;
+}
+
+.wheel-wrapper canvas {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 50%;
+  filter: drop-shadow(0 8px 30px rgba(180,160,220,0.35));
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top: 36px solid var(--text-dark);
+  z-index: 10;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+}
+
+.wheel-controls {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.wheel-result {
+  margin: 1.5rem 0;
+  animation: wheel-result-pop 0.5s ease-out;
+}
+
+@keyframes wheel-result-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.wheel-book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.wheel-book-item {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.95rem;
+}
+
+.wheel-book-item:last-child {
+  border-bottom: none;
+}
+
+.wheel-book-item .book-author {
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+.wheel-book-item .book-submitter {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+}
+
 /* --- Results Page --- */
 .winner-card {
   border-color: var(--pale-yellow-deep);

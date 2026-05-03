@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"embed"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -106,9 +107,16 @@ func (s *Server) initAdminToken() error {
 func (s *Server) loadTemplates() error {
 	s.templates = make(map[string]*template.Template)
 
+	funcMap := template.FuncMap{
+		"jsonStr": func(s string) template.JS {
+			b, _ := json.Marshal(s)
+			return template.JS(b)
+		},
+	}
+
 	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books"}
 	for _, page := range pages {
-		tmpl, err := template.ParseFS(embedFS,
+		tmpl, err := template.New("").Funcs(funcMap).ParseFS(embedFS,
 			"templates/layout.html",
 			fmt.Sprintf("templates/%s.html", page),
 		)
