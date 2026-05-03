@@ -1,0 +1,112 @@
+{{define "content"}}
+<div class="hero">
+    <h2 class="hero-title">📅 Reading Schedule ✨</h2>
+    <p class="hero-subtitle">Our book club journey past, present, and future!</p>
+</div>
+
+{{if .Schedule}}
+    {{$hasReading := false}}
+    {{$hasUpcoming := false}}
+    {{$hasCompleted := false}}
+    
+    {{range .Schedule}}
+        {{if eq .Status "reading"}}{{$hasReading = true}}{{end}}
+        {{if eq .Status "upcoming"}}{{$hasUpcoming = true}}{{end}}
+        {{if eq .Status "completed"}}{{$hasCompleted = true}}{{end}}
+    {{end}}
+
+    {{if $hasReading}}
+    <div class="schedule-section">
+        <h3 class="section-title">📖 Currently Reading</h3>
+        {{range .Schedule}}
+            {{if eq .Status "reading"}}
+            <div class="card schedule-card reading-card">
+                <div class="status-badge status-reading">📖 Reading Now</div>
+                <h4 class="book-title">{{.BookTitle}}</h4>
+                <p class="book-author">by {{.BookAuthor}}</p>
+                {{if .SuggestedBy.Valid}}
+                <p class="book-submitter">🦦 Suggested by {{.SuggestedBy.String}}</p>
+                {{end}}
+                {{if .ReadingProgress.Valid}}
+                <div class="progress-box">
+                    <strong>📍 Progress:</strong> {{.ReadingProgress.String}}
+                </div>
+                {{end}}
+                {{if .MeetingDate.Valid}}
+                <p class="meeting-date">📅 Next meeting: {{.MeetingDate.String}}</p>
+                {{end}}
+                {{if .Notes.Valid}}
+                <div class="notes-box">
+                    <strong>📝 Notes:</strong> {{.Notes.String}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        {{end}}
+    </div>
+    {{end}}
+
+    {{if $hasUpcoming}}
+    <div class="schedule-section">
+        <h3 class="section-title">⏭️ Coming Up Next</h3>
+        {{range .Schedule}}
+            {{if eq .Status "upcoming"}}
+            <div class="card schedule-card upcoming-card">
+                <div class="status-badge status-upcoming">⏭️ Upcoming</div>
+                <h4 class="book-title">{{.BookTitle}}</h4>
+                <p class="book-author">by {{.BookAuthor}}</p>
+                {{if .SuggestedBy.Valid}}
+                <p class="book-submitter">🦦 Suggested by {{.SuggestedBy.String}}</p>
+                {{end}}
+                {{if .MeetingDate.Valid}}
+                <p class="meeting-date">📅 Scheduled for: {{.MeetingDate.String}}</p>
+                {{end}}
+                {{if .Notes.Valid}}
+                <div class="notes-box">
+                    <strong>📝 Notes:</strong> {{.Notes.String}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        {{end}}
+    </div>
+    {{end}}
+
+    {{if $hasCompleted}}
+    <div class="schedule-section">
+        <h3 class="section-title">✅ Completed Books</h3>
+        <div class="completed-grid">
+            {{range .Schedule}}
+                {{if eq .Status "completed"}}
+                <div class="card schedule-card completed-card">
+                    <div class="status-badge status-completed">✅ Completed</div>
+                    <h4 class="book-title">{{.BookTitle}}</h4>
+                    <p class="book-author">by {{.BookAuthor}}</p>
+                    {{if .SuggestedBy.Valid}}
+                    <p class="book-submitter">🦦 {{.SuggestedBy.String}}</p>
+                    {{end}}
+                    {{if .MeetingDate.Valid}}
+                    <p class="meeting-date-small">📅 {{.MeetingDate.String}}</p>
+                    {{end}}
+                    {{if .Notes.Valid}}
+                    <div class="notes-box-small">
+                        {{.Notes.String}}
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+{{else}}
+<div class="card">
+    <h3>📚 No Books Yet</h3>
+    <p>The reading schedule is empty. Once we start selecting books, they'll appear here! 🦦✨</p>
+</div>
+{{end}}
+
+<div class="card">
+    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+</div>
+{{end}}

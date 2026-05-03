@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "queries/bookclub.sql"
+    schema: "migrations/"
+    gen:
+      go:
+        package: "dbgen"
+        out: "dbgen"
+        emit_json_tags: true
+        emit_interface: false
+        emit_empty_slices: true

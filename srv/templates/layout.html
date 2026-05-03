@@ -1,0 +1,47 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Otter Hole Book Club 🦦✨</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="stars2"></div>
+    <div class="stars3"></div>
+    
+    <header>
+        <div class="container">
+            <h1 class="logo">
+                <span class="sparkle">✨</span>
+                🦦 The Otter Hole Book Club
+                <span class="sparkle">✨</span>
+            </h1>
+            <nav>
+                <a href="/">Home 🏠</a>
+                <a href="/submit">Submit Book 📚</a>
+                <a href="/schedule">Schedule 📅</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {{template "content" .}}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Made with 💖 and otters 🦦 | <a href="https://bookclub.exe.xyz:8000/">The Otter Hole</a></p>
+            <p class="sparkle-text">⭐ Keep reading, stay curious! 🌟</p>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
+{{end}}

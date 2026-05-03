@@ -1,0 +1,82 @@
+{{define "content"}}
+<div class="hero">
+    <h2 class="hero-title">Welcome to The Otter Hole! 🦦✨</h2>
+    <p class="hero-subtitle">A cozy book club for curious readers 📚💖</p>
+</div>
+
+{{if .CurrentRound}}
+<div class="card">
+    <h3>🌟 Current Round: {{.CurrentRound.Title}}</h3>
+    
+    {{if eq .CurrentRound.Status "submissions_open"}}
+        <div class="status-badge status-open">Submissions Open! 📝</div>
+        <p>We're collecting book suggestions! Submit your favorite book below.</p>
+        <p class="stat">📚 <strong>{{.SubmissionCount}}</strong> books submitted so far!</p>
+        <a href="/submit" class="btn btn-primary">Submit a Book ✨</a>
+    {{else if eq .CurrentRound.Status "voting_open"}}
+        <div class="status-badge status-voting">Voting Open! 🗳️</div>
+        <p>Time to vote on which book we'll read next!</p>
+        <p class="stat">📚 <strong>{{.SubmissionCount}}</strong> books | 🗳️ <strong>{{.VoteCount}}</strong> votes</p>
+        <a href="/vote/{{.CurrentRound.VoteCode}}" class="btn btn-primary">Vote Now 🌟</a>
+    {{else if eq .CurrentRound.Status "closed"}}
+        <div class="status-badge status-closed">Voting Closed 🔒</div>
+        <p>This round has ended. Check out the results!</p>
+        <a href="/results/{{.CurrentRound.ID}}" class="btn btn-secondary">View Results 🏆</a>
+    {{end}}
+</div>
+{{else}}
+<div class="card">
+    <h3>🦦 No Active Round</h3>
+    <p>Check back soon for the next book selection round! ✨</p>
+</div>
+{{end}}
+
+{{if .CurrentReading}}
+<div class="card highlight">
+    <h3>📖 Currently Reading</h3>
+    <div class="book-info">
+        <h4 class="book-title">{{.CurrentReading.BookTitle}}</h4>
+        <p class="book-author">by {{.CurrentReading.BookAuthor}}</p>
+        {{if .CurrentReading.SuggestedBy.Valid}}
+        <p class="suggested-by">🎯 Suggested by: {{.CurrentReading.SuggestedBy.String}}</p>
+        {{end}}
+        {{if .CurrentReading.ReadingProgress.Valid}}
+        <p class="progress">📍 Progress: {{.CurrentReading.ReadingProgress.String}}</p>
+        {{end}}
+        {{if .CurrentReading.MeetingDate.Valid}}
+        <p class="meeting-date">📅 Next meeting: {{.CurrentReading.MeetingDate.String}}</p>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{if .NextBook}}
+<div class="card">
+    <h3>⏭️ Up Next</h3>
+    <div class="book-info">
+        <h4 class="book-title">{{.NextBook.BookTitle}}</h4>
+        <p class="book-author">by {{.NextBook.BookAuthor}}</p>
+        {{if .NextBook.SuggestedBy.Valid}}
+        <p class="suggested-by">🎯 Suggested by: {{.NextBook.SuggestedBy.String}}</p>
+        {{end}}
+        {{if .NextBook.MeetingDate.Valid}}
+        <p class="meeting-date">📅 Scheduled for: {{.NextBook.MeetingDate.String}}</p>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+<div class="card info-card">
+    <h3>🤔 How It Works</h3>
+    <ol class="how-it-works">
+        <li>📝 <strong>Submit</strong> - Share a book you'd love to read together</li>
+        <li>🗳️ <strong>Vote</strong> - Rank all submitted books using ranked choice voting</li>
+        <li>🏆 <strong>Winner</strong> - The most popular book wins and we read it together!</li>
+        <li>📚 <strong>Read</strong> - Join the discussion and enjoy the book club vibes</li>
+    </ol>
+</div>
+
+<div class="otter-box">
+    <p>🦦 Remember: Every otter gets one vote per round! 🦦</p>
+</div>
+{{end}}

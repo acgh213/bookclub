@@ -1,0 +1,88 @@
+{{define "content"}}
+<div class="hero">
+    <h2 class="hero-title">🗳️ Vote for Our Next Book ✨</h2>
+    <p class="hero-subtitle">Rank all books from favorite to least favorite!</p>
+</div>
+
+{{if .Error}}
+<div class="alert alert-error">
+    <strong>⚠️ Oops!</strong> {{.Error}}
+</div>
+{{end}}
+
+{{if .Success}}
+<div class="alert alert-success">
+    <strong>🎉 Vote Submitted!</strong> {{.Success}}
+</div>
+<div class="card">
+    <p>Thanks for voting! We'll announce the winner soon. 🦦🏆</p>
+    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+</div>
+{{else if .Submissions}}
+<div class="card">
+    <h3>🌟 Round: {{.Round.Title}}</h3>
+    <p>Rank these {{len .Submissions}} books in order of preference. Your #1 choice is your top pick!</p>
+    
+    <div class="voting-info">
+        <div class="info-box">
+            <strong>🤔 How Ranked Choice Voting Works:</strong>
+            <ul>
+                <li>Rank all books from 1 (favorite) to {{len .Submissions}} (least favorite)</li>
+                <li>If your first choice doesn't win, your vote goes to your next choice</li>
+                <li>The book with the most support wins! 🏆</li>
+            </ul>
+        </div>
+    </div>
+
+    <form method="POST" action="/vote/{{.Round.VoteCode}}" class="form vote-form">
+        <div class="form-group">
+            <label for="nickname">🦦 Your Nickname</label>
+            <input type="text" id="nickname" name="nickname" required 
+                   placeholder="OtterLover42">
+            <small>Use the same nickname you submitted with (if you submitted a book)</small>
+        </div>
+
+        <div class="ranking-container">
+            <h4>📚 Rank the Books</h4>
+            <p class="ranking-instruction">Assign each book a rank from 1 to {{len .Submissions}}</p>
+            
+            <div class="book-rankings" id="bookRankings">
+                {{range $index, $sub := .Submissions}}
+                <div class="ranking-item" data-submission-id="{{$sub.ID}}">
+                    <div class="rank-input">
+                        <label for="rank_{{$sub.ID}}">#</label>
+                        <input type="number" 
+                               id="rank_{{$sub.ID}}" 
+                               name="rank_{{$sub.ID}}" 
+                               min="1" 
+                               max="{{len $.Submissions}}" 
+                               required
+                               class="rank-number">
+                    </div>
+                    <div class="book-details">
+                        <div class="book-title">{{$sub.BookTitle}}</div>
+                        <div class="book-author">by {{$sub.BookAuthor}}</div>
+                        <div class="book-submitter">🦦 Suggested by {{$sub.Nickname}}</div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-large">
+            🌟 Submit Your Rankings 🗳️
+        </button>
+    </form>
+</div>
+
+<div class="otter-box">
+    <p>💡 <strong>Remember:</strong> Each rank number can only be used once! Make sure you rank all books. 🦦</p>
+</div>
+{{else}}
+<div class="card">
+    <h3>🔒 Voting Closed</h3>
+    <p>Voting is not currently open for this round. Check back later! ✨</p>
+    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,95 @@
+{{define "content"}}
+<div class="hero">
+    <h2 class="hero-title">🏆 Voting Results ✨</h2>
+    <p class="hero-subtitle">See how ranked choice voting played out!</p>
+</div>
+
+<div class="card">
+    <h3>🌟 Round: {{.Round.Title}}</h3>
+    <p class="stat">📚 <strong>{{len .Submissions}}</strong> books | 🗳️ <strong>{{.VoteCount}}</strong> votes cast</p>
+</div>
+
+{{if .Result.Winner}}
+<div class="card winner-card">
+    <div class="winner-banner">🏆 WINNER 🏆</div>
+    {{range .Submissions}}
+        {{if eq .ID $.Result.Winner}}
+        <div class="winner-book">
+            <h2 class="book-title">{{.BookTitle}}</h2>
+            <p class="book-author">by {{.BookAuthor}}</p>
+            <p class="book-submitter">🦦 Suggested by {{.Nickname}}</p>
+        </div>
+        {{end}}
+    {{end}}
+    <div class="confetti">✨🎉⭐🌟💖✨</div>
+</div>
+
+<div class="card">
+    <h3>📉 Elimination Rounds</h3>
+    <p>Here's how ranked choice voting determined the winner:</p>
+    
+    {{range $roundIdx, $round := .Result.Rounds}}
+    <div class="elimination-round">
+        <h4>🔢 Round {{$round.RoundNumber}}</h4>
+        <div class="vote-counts">
+            {{range $subID, $count := $round.Counts}}
+                {{range $.Submissions}}
+                    {{if eq .ID $subID}}
+                    <div class="vote-count-item {{if eq $subID $round.Eliminated}}eliminated{{end}} {{if eq $subID $round.Winner}}winner{{end}}">
+                        <span class="count-badge">{{$count}}</span>
+                        <span class="book-name">{{.BookTitle}}</span>
+                        {{if eq $subID $round.Eliminated}}
+                        <span class="status-badge-small eliminated-badge">❌ Eliminated</span>
+                        {{else if eq $subID $round.Winner}}
+                        <span class="status-badge-small winner-badge">✅ Winner!</span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                {{end}}
+            {{end}}
+        </div>
+        
+        {{if $round.Eliminated}}
+        <p class="round-summary">
+            {{range $.Submissions}}
+                {{if eq .ID $round.Eliminated}}
+                    <em>{{.BookTitle}}</em> had the fewest votes and was eliminated. 
+                    Those votes were redistributed to voters' next choices. 🔄
+                {{end}}
+            {{end}}
+        </p>
+        {{else if $round.Winner}}
+        <p class="round-summary winner-summary">
+            {{range $.Submissions}}
+                {{if eq .ID $round.Winner}}
+                    <strong>{{.BookTitle}}</strong> won with majority support! 🎉
+                {{end}}
+            {{end}}
+        </p>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+
+<div class="card info-card">
+    <h3>🤔 About Ranked Choice Voting</h3>
+    <p>Ranked choice voting ensures the winning book has the broadest support:</p>
+    <ul>
+        <li>✅ If a book gets over 50% of first-choice votes, it wins immediately</li>
+        <li>🔄 Otherwise, the book with the fewest votes is eliminated</li>
+        <li>🔢 Votes for eliminated books transfer to voters' next choices</li>
+        <li>🔁 This continues until one book has majority support</li>
+    </ul>
+</div>
+{{else}}
+<div class="card">
+    <h3>⚠️ No Results Yet</h3>
+    <p>No votes have been cast yet, or there was an issue calculating results. 🦦</p>
+</div>
+{{end}}
+
+<div class="card">
+    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+    <a href="/schedule" class="btn btn-secondary">View Schedule 📅</a>
+</div>
+{{end}}

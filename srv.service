@@ -1,0 +1,20 @@
+[Unit]
+Description=The Otter Hole Book Club
+
+[Service]
+Type=simple
+User=exedev
+Group=exedev
+WorkingDirectory=/home/exedev/otterhole
+ExecStart=/home/exedev/otterhole/otterhole
+Restart=always
+RestartSec=5
+Environment=HOME=/home/exedev
+Environment=USER=exedev
+# Set ADMIN_TOKEN to override the auto-generated token:
+# Environment=ADMIN_TOKEN=your-secret-token
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
