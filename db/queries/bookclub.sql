@@ -44,6 +44,20 @@ SELECT * FROM submissions WHERE round_id = ? AND nickname = ? LIMIT 1;
 -- name: CountSubmissionsByRound :one
 SELECT COUNT(*) as count FROM submissions WHERE round_id = ?;
 
+-- name: ListAllSubmissions :many
+SELECT s.*, r.title as round_title, r.status as round_status
+FROM submissions s
+JOIN rounds r ON s.round_id = r.id
+ORDER BY s.created_at DESC;
+
+-- name: UpdateSubmission :exec
+UPDATE submissions
+SET book_title = ?, book_author = ?, nickname = ?
+WHERE id = ?;
+
+-- name: DeleteSubmission :exec
+DELETE FROM submissions WHERE id = ?;
+
 -- name: CreateVote :one
 INSERT INTO votes (round_id, nickname, discord_user_id)
 VALUES (?, ?, ?)

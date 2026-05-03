@@ -1,0 +1,44 @@
+{{define "content"}}
+<div class="hero">
+    <h2 class="hero-title">Book List</h2>
+    <p class="hero-subtitle">Every book submitted to The Otter Hole</p>
+</div>
+
+{{if .HasBooks}}
+    {{range .Groups}}
+    <div class="schedule-section">
+        <h3 class="section-title">{{.RoundTitle}}
+            <span class="status-badge {{if eq .RoundStatus "submissions_open"}}status-open{{else if eq .RoundStatus "voting_open"}}status-voting{{else}}status-closed{{end}} status-badge-inline">
+                {{if eq .RoundStatus "submissions_open"}}Submissions Open
+                {{else if eq .RoundStatus "voting_open"}}Voting Open
+                {{else}}Closed{{end}}
+            </span>
+        </h3>
+        {{range .Books}}
+        <div class="card book-list-card">
+            <div class="book-list-row">
+                <div class="book-list-info">
+                    <h4 class="book-title">{{.BookTitle}}</h4>
+                    <p class="book-author">by {{.BookAuthor}}</p>
+                </div>
+                <div class="book-list-meta">
+                    <span class="book-submitter">Submitted by <strong>{{.Nickname}}</strong></span>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+{{else}}
+<div class="card">
+    <h3>No Books Yet</h3>
+    <p>No books have been submitted yet. Be the first!</p>
+    <a href="/submit" class="btn btn-primary">Submit a Book</a>
+</div>
+{{end}}
+
+<div class="card">
+    <a href="/" class="btn btn-primary">Back to Home</a>
+    <a href="/submit" class="btn btn-secondary">Submit a Book</a>
+</div>
+{{end}}

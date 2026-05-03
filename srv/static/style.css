@@ -761,6 +761,90 @@ main {
   gap: 1rem;
 }
 
+/* --- Book List Page --- */
+.book-list-card {
+  padding: 1rem 1.5rem;
+}
+
+.book-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.book-list-info {
+  flex: 1;
+}
+
+.book-list-info .book-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.1rem;
+}
+
+.book-list-info .book-author {
+  margin-bottom: 0;
+}
+
+.book-list-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.book-list-meta .book-submitter {
+  font-size: 0.85rem;
+}
+
+.status-badge-inline {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.6rem;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+/* --- Submission Admin Items --- */
+.submissions-list {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.submission-admin-item {
+  background: rgba(255,255,255,0.6);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.submission-admin-info {
+  font-size: 0.95rem;
+}
+
+.submission-admin-info .book-submitter {
+  color: var(--text-light);
+  font-size: 0.85rem;
+}
+
+.edit-details-inner {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+.edit-details-inner summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-size: 0.85rem;
+  padding: 0.2rem 0;
+}
+
+.edit-details-inner summary:hover {
+  color: var(--pink-deep);
+}
+
 /* --- Admin Page --- */
 .admin-section {
   margin-bottom: 2rem;

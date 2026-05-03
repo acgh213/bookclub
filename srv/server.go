@@ -106,7 +106,7 @@ func (s *Server) initAdminToken() error {
 func (s *Server) loadTemplates() error {
 	s.templates = make(map[string]*template.Template)
 
-	pages := []string{"home", "submit", "vote", "results", "schedule", "admin"}
+	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books"}
 	for _, page := range pages {
 		tmpl, err := template.ParseFS(embedFS,
 			"templates/layout.html",
@@ -130,6 +130,7 @@ func (s *Server) Handler() http.Handler {
 	// Public routes
 	mux.HandleFunc("/", s.handleHome)
 	mux.HandleFunc("/submit", s.handleSubmit)
+	mux.HandleFunc("/books", s.handleBooks)
 	mux.HandleFunc("/vote/", s.handleVote)
 	mux.HandleFunc("/results/", s.handleResults)
 	mux.HandleFunc("/schedule", s.handleSchedule)
@@ -450,6 +451,41 @@ func (s *Server) handleResults(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleBooks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	books, err := s.queries.ListAllSubmissions(ctx)
+	if err != nil {
+		http.Error(w, "Failed to load books", http.StatusInternalServerError)
+		return
+	}
+
+	// Group by round for template rendering
+	type RoundGroup struct {
+		RoundTitle  string
+		RoundStatus string
+		Books       []dbgen.ListAllSubmissionsRow
+	}
+	var groups []RoundGroup
+	groupMap := make(map[string]int) // roundTitle -> index in groups
+	for _, b := range books {
+		idx, ok := groupMap[b.RoundTitle]
+		if !ok {
+			idx = len(groups)
+			groupMap[b.RoundTitle] = idx
+			groups = append(groups, RoundGroup{
+				RoundTitle:  b.RoundTitle,
+				RoundStatus: b.RoundStatus,
+			})
+		}
+		groups[idx].Books = append(groups[idx].Books, b)
+	}
+
+	s.renderTemplate(w, "books", map[string]interface{}{
+		"Groups":   groups,
+		"HasBooks": len(books) > 0,
+	})
+}
+
 func (s *Server) handleSchedule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	schedule, err := s.queries.ListSchedule(ctx)
@@ -490,6 +526,14 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 		} else {
 			http.NotFound(w, r)
 		}
+	case "submission":
+		if len(parts) == 3 {
+			s.handleAdminUpdateSubmission(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "delete" {
+			s.handleAdminDeleteSubmission(w, r, parts[2])
+		} else {
+			http.NotFound(w, r)
+		}
 	case "schedule":
 		if len(parts) == 2 {
 			s.handleAdminCreateSchedule(w, r)
@@ -514,10 +558,12 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	for i, round := range rounds {
 		subCount, _ := s.queries.CountSubmissionsByRound(ctx, round.ID)
 		voteCount, _ := s.queries.CountVotesByRound(ctx, round.ID)
+		submissions, _ := s.queries.ListSubmissionsByRound(ctx, round.ID)
 		roundData[i] = map[string]interface{}{
 			"Round":           round,
 			"SubmissionCount": subCount,
 			"VoteCount":       voteCount,
+			"Submissions":     submissions,
 		}
 	}
 
@@ -657,6 +703,53 @@ func (s *Server) handleAdminUpdateSchedule(w http.ResponseWriter, r *http.Reques
 		ID:              id,
 	}); err != nil {
 		http.Error(w, "Failed to update schedule entry", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/%s", s.adminToken), http.StatusSeeOther)
+}
+
+func (s *Server) handleAdminUpdateSubmission(w http.ResponseWriter, r *http.Request, idStr string) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	ctx := r.Context()
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid submission ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.queries.UpdateSubmission(ctx, dbgen.UpdateSubmissionParams{
+		BookTitle:  r.FormValue("book_title"),
+		BookAuthor: r.FormValue("book_author"),
+		Nickname:   r.FormValue("nickname"),
+		ID:         id,
+	}); err != nil {
+		http.Error(w, "Failed to update submission", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/%s", s.adminToken), http.StatusSeeOther)
+}
+
+func (s *Server) handleAdminDeleteSubmission(w http.ResponseWriter, r *http.Request, idStr string) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	ctx := r.Context()
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid submission ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.queries.DeleteSubmission(ctx, id); err != nil {
+		http.Error(w, "Failed to delete submission", http.StatusInternalServerError)
 		return
 	}
 

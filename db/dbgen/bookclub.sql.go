@@ -177,6 +177,15 @@ func (q *Queries) CreateVoteRanking(ctx context.Context, arg CreateVoteRankingPa
 	return err
 }
 
+const deleteSubmission = `-- name: DeleteSubmission :exec
+DELETE FROM submissions WHERE id = ?
+`
+
+func (q *Queries) DeleteSubmission(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteSubmission, id)
+	return err
+}
+
 const deleteScheduleEntry = `-- name: DeleteScheduleEntry :exec
 DELETE FROM schedule WHERE id = ?
 `
@@ -405,6 +414,76 @@ func (q *Queries) GetVoteByNickname(ctx context.Context, arg GetVoteByNicknamePa
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listAllSubmissions = `-- name: ListAllSubmissions :many
+SELECT s.id, s.round_id, s.nickname, s.book_title, s.book_author, s.discord_user_id, s.created_at, r.title as round_title, r.status as round_status
+FROM submissions s
+JOIN rounds r ON s.round_id = r.id
+ORDER BY s.created_at DESC
+`
+
+type ListAllSubmissionsRow struct {
+	ID            int64          `json:"id"`
+	RoundID       int64          `json:"round_id"`
+	Nickname      string         `json:"nickname"`
+	BookTitle     string         `json:"book_title"`
+	BookAuthor    string         `json:"book_author"`
+	DiscordUserID sql.NullString `json:"discord_user_id"`
+	CreatedAt     sql.NullTime   `json:"created_at"`
+	RoundTitle    string         `json:"round_title"`
+	RoundStatus   string         `json:"round_status"`
+}
+
+func (q *Queries) ListAllSubmissions(ctx context.Context) ([]ListAllSubmissionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllSubmissions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAllSubmissionsRow{}
+	for rows.Next() {
+		var i ListAllSubmissionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoundID,
+			&i.Nickname,
+			&i.BookTitle,
+			&i.BookAuthor,
+			&i.DiscordUserID,
+			&i.CreatedAt,
+			&i.RoundTitle,
+			&i.RoundStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateSubmission = `-- name: UpdateSubmission :exec
+UPDATE submissions
+SET book_title = ?, book_author = ?, nickname = ?
+WHERE id = ?
+`
+
+type UpdateSubmissionParams struct {
+	BookTitle  string `json:"book_title"`
+	BookAuthor string `json:"book_author"`
+	Nickname   string `json:"nickname"`
+	ID         int64  `json:"id"`
+}
+
+func (q *Queries) UpdateSubmission(ctx context.Context, arg UpdateSubmissionParams) error {
+	_, err := q.db.ExecContext(ctx, updateSubmission, arg.BookTitle, arg.BookAuthor, arg.Nickname, arg.ID)
+	return err
 }
 
 const listAllRankingsByRound = `-- name: ListAllRankingsByRound :many

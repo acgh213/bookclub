@@ -71,6 +71,48 @@
                 
                 <a href="/results/{{.Round.ID}}" class="btn btn-secondary" target="_blank">View Results</a>
             </div>
+
+            {{if .Submissions}}
+            <details class="edit-details">
+                <summary>Manage Submissions ({{.SubmissionCount}})</summary>
+                <div class="submissions-list">
+                    {{range .Submissions}}
+                    <div class="submission-admin-item">
+                        <div class="submission-admin-info">
+                            <strong>{{.BookTitle}}</strong> by {{.BookAuthor}}
+                            <span class="book-submitter">— submitted by {{.Nickname}}</span>
+                        </div>
+                        <details class="edit-details-inner">
+                            <summary>Edit</summary>
+                            <form method="POST" action="/admin/{{$.AdminToken}}/submission/{{.ID}}" class="form edit-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Book Title</label>
+                                        <input type="text" name="book_title" value="{{.BookTitle}}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Author</label>
+                                        <input type="text" name="book_author" value="{{.BookAuthor}}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Submitted By</label>
+                                    <input type="text" name="nickname" value="{{.Nickname}}" required>
+                                </div>
+                                <div class="admin-actions">
+                                    <button type="submit" class="btn btn-primary btn-small">Update</button>
+                                </div>
+                            </form>
+                            <form method="POST" action="/admin/{{$.AdminToken}}/submission/{{.ID}}/delete"
+                                  onsubmit="return confirm('Delete this submission? This may affect existing votes.');">
+                                <button type="submit" class="btn btn-danger btn-small">Delete</button>
+                            </form>
+                        </details>
+                    </div>
+                    {{end}}
+                </div>
+            </details>
+            {{end}}
         </div>
         {{end}}
     {{else}}
