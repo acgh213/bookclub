@@ -58,9 +58,9 @@ func New(dbPath, hostname string) (*Server, error) {
 }
 
 func (s *Server) Serve(addr string) error {
-	log.Printf("\n🦦 The Otter Hole Book Club is running!")
-	log.Printf("🌐 Listening on %s", addr)
-	log.Printf("🔑 Admin URL: https://%s/admin/%s\n", s.hostname, s.adminToken)
+	log.Printf("\nThe Otter Hole Book Club is running")
+	log.Printf("Listening on %s", addr)
+	log.Printf("Admin URL: https://%s/admin/%s\n", s.hostname, s.adminToken)
 	return http.ListenAndServe(addr, s.Handler())
 }
 
@@ -70,7 +70,7 @@ func (s *Server) initAdminToken() error {
 	// Check env var first
 	if token := os.Getenv("ADMIN_TOKEN"); token != "" {
 		s.adminToken = token
-		log.Printf("🦦 Using ADMIN_TOKEN from environment")
+		log.Printf("Using ADMIN_TOKEN from environment")
 		return nil
 	}
 
@@ -78,7 +78,7 @@ func (s *Server) initAdminToken() error {
 	cfg, err := s.queries.GetConfig(ctx, "admin_token")
 	if err == nil {
 		s.adminToken = cfg.Value
-		log.Printf("🦦 Loaded admin token from database")
+		log.Printf("Loaded admin token from database")
 		return nil
 	}
 
@@ -96,9 +96,9 @@ func (s *Server) initAdminToken() error {
 	}
 
 	s.adminToken = token
-	log.Printf("\n🦦✨ NEW ADMIN TOKEN GENERATED ✨🦦")
-	log.Printf("🔑 Admin URL: https://%s/admin/%s", s.hostname, token)
-	log.Printf("⭐ Please save this token securely!")
+	log.Printf("\nNew admin token generated")
+	log.Printf("Admin URL: https://%s/admin/%s", s.hostname, token)
+	log.Printf("Save this token securely.")
 
 	return nil
 }
@@ -186,13 +186,13 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	cr, err := s.queries.GetCurrentRound(ctx)
 	if err != nil {
 		s.renderTemplate(w, "submit", map[string]interface{}{
-			"Error": "Submissions are currently closed. Check back later! 🦦",
+			"Error": "Submissions are currently closed. Check back later!",
 		})
 		return
 	}
 	if cr.Status != "submissions_open" {
 		s.renderTemplate(w, "submit", map[string]interface{}{
-			"Error": "Submissions are currently closed. Check back later! 🦦",
+			"Error": "Submissions are currently closed. Check back later!",
 			"Round": cr,
 		})
 		return
@@ -205,7 +205,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 		if nickname == "" || bookTitle == "" || bookAuthor == "" {
 			s.renderTemplate(w, "submit", map[string]interface{}{
-				"Error":      "All fields are required! 📚",
+				"Error":      "All fields are required.",
 				"Round":      cr,
 				"Nickname":   nickname,
 				"BookTitle":  bookTitle,
@@ -221,7 +221,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		})
 		if dupErr == nil {
 			s.renderTemplate(w, "submit", map[string]interface{}{
-				"Error": "You've already submitted a book for this round! 🦦",
+				"Error": "You've already submitted a book for this round.",
 				"Round": cr,
 			})
 			return
@@ -235,14 +235,14 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			s.renderTemplate(w, "submit", map[string]interface{}{
-				"Error": "Failed to submit book. Please try again! 🌟",
+				"Error": "Failed to submit book. Please try again.",
 				"Round": cr,
 			})
 			return
 		}
 
 		s.renderTemplate(w, "submit", map[string]interface{}{
-			"Success": "Book submitted successfully! ✨",
+			"Success": "Book submitted successfully!",
 			"Round":   cr,
 		})
 		return
@@ -269,7 +269,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 
 	if round.Status != "voting_open" {
 		s.renderTemplate(w, "vote", map[string]interface{}{
-			"Error": "Voting is currently closed for this round! 🦦",
+			"Error": "Voting is currently closed for this round.",
 			"Round": round,
 		})
 		return
@@ -278,7 +278,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 	submissions, err := s.queries.ListSubmissionsByRound(ctx, round.ID)
 	if err != nil || len(submissions) == 0 {
 		s.renderTemplate(w, "vote", map[string]interface{}{
-			"Error": "No books have been submitted for this round yet! 📚",
+			"Error": "No books have been submitted for this round yet.",
 			"Round": round,
 		})
 		return
@@ -288,7 +288,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		nickname := strings.TrimSpace(r.FormValue("nickname"))
 		if nickname == "" {
 			s.renderTemplate(w, "vote", map[string]interface{}{
-				"Error":       "Nickname is required! 🦦",
+				"Error":       "Nickname is required.",
 				"Round":       round,
 				"Submissions": submissions,
 			})
@@ -302,7 +302,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		})
 		if dupErr == nil {
 			s.renderTemplate(w, "vote", map[string]interface{}{
-				"Error":       "You've already voted in this round! 🌟",
+				"Error":       "You've already voted in this round.",
 				"Round":       round,
 				"Submissions": submissions,
 			})
@@ -317,7 +317,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 			rank, err := strconv.ParseInt(rankStr, 10, 64)
 			if err != nil || rank < 1 || rank > numBooks {
 				s.renderTemplate(w, "vote", map[string]interface{}{
-					"Error":       fmt.Sprintf("Please rank all books from 1 to %d! 📚", numBooks),
+					"Error":       fmt.Sprintf("Please rank all books from 1 to %d!.", numBooks),
 					"Round":       round,
 					"Submissions": submissions,
 				})
@@ -331,7 +331,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		for _, rank := range rankings {
 			if usedRanks[rank] {
 				s.renderTemplate(w, "vote", map[string]interface{}{
-					"Error":       "Each rank must be used exactly once! 🦦",
+					"Error":       "Each rank must be used exactly once.",
 					"Round":       round,
 					"Submissions": submissions,
 				})
@@ -347,7 +347,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			s.renderTemplate(w, "vote", map[string]interface{}{
-				"Error":       "Failed to save vote. Please try again! ✨",
+				"Error":       "Failed to save vote. Please try again.",
 				"Round":       round,
 				"Submissions": submissions,
 			})
@@ -368,7 +368,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.renderTemplate(w, "vote", map[string]interface{}{
-			"Success":     "Vote submitted successfully! 🦦✨",
+			"Success":     "Vote submitted successfully!",
 			"Round":       round,
 			"Submissions": submissions,
 		})

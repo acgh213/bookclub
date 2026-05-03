@@ -1,25 +1,22 @@
-// 🦦 The Otter Hole Book Club - Interactive Scripts
+// The Otter Hole Book Club
 
 document.addEventListener('DOMContentLoaded', function() {
-  // --- Floating Sparkles ---
-  const sparkles = ['✨', '⭐', '🌟', '💖', '❤️', '🦦'];
-  
+  // --- Subtle floating particles ---
   function createSparkle() {
     const el = document.createElement('span');
     el.className = 'floating-sparkle';
-    el.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+    el.textContent = '\u2727';
     el.style.left = Math.random() * 100 + 'vw';
     el.style.top = (80 + Math.random() * 20) + 'vh';
-    el.style.fontSize = (0.6 + Math.random() * 1) + 'rem';
-    el.style.animationDuration = (4 + Math.random() * 6) + 's';
+    el.style.fontSize = (0.7 + Math.random() * 0.5) + 'rem';
+    el.style.animationDuration = (6 + Math.random() * 8) + 's';
+    el.style.color = 'var(--lavender-deep)';
     document.body.appendChild(el);
     el.addEventListener('animationend', () => el.remove());
   }
 
-  // Spawn sparkles periodically
-  setInterval(createSparkle, 3000);
-  // Initial burst
-  for (let i = 0; i < 3; i++) setTimeout(createSparkle, i * 500);
+  setInterval(createSparkle, 6000);
+  setTimeout(createSparkle, 2000);
 
   // --- Drag-to-Rank Voting ---
   const rankings = document.getElementById('bookRankings');
@@ -27,13 +24,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const items = rankings.querySelectorAll('.ranking-item');
     let draggedItem = null;
 
-    items.forEach((item, index) => {
+    items.forEach((item) => {
       item.setAttribute('draggable', 'true');
       
-      // Add drag handle
       const handle = document.createElement('span');
       handle.className = 'drag-handle';
-      handle.textContent = '☰';
+      handle.textContent = '\u2630';
       item.insertBefore(handle, item.firstChild);
 
       item.addEventListener('dragstart', function(e) {
@@ -75,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
       // Touch support
-      item.addEventListener('touchstart', function(e) {
+      item.addEventListener('touchstart', function() {
         draggedItem = this;
         this.classList.add('dragging');
       }, {passive: true});
@@ -93,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-      item.addEventListener('touchend', function(e) {
+      item.addEventListener('touchend', function() {
         this.classList.remove('dragging');
         const overItem = rankings.querySelector('.drag-over');
         if (overItem && draggedItem && overItem !== draggedItem) {
@@ -119,13 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // Set initial rank numbers
     updateRankNumbers();
 
-    // Also update on manual input change
     rankings.addEventListener('input', function(e) {
       if (e.target.classList.contains('rank-number')) {
-        // Validate range
         const max = items.length;
         let val = parseInt(e.target.value);
         if (val < 1) e.target.value = 1;
@@ -141,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     el.addEventListener('click', function() {
       navigator.clipboard.writeText(this.textContent.trim()).then(() => {
         const orig = this.textContent;
-        this.textContent = 'Copied! ✨';
+        this.textContent = 'Copied!';
         setTimeout(() => this.textContent = orig, 1500);
       });
     });

@@ -1,11 +1,11 @@
 {{define "content"}}
 <div class="hero">
-    <h2 class="hero-title">🔑 Admin Dashboard ✨</h2>
+    <h2 class="hero-title">Admin Dashboard</h2>
     <p class="hero-subtitle">Manage rounds and schedule</p>
 </div>
 
 <div class="card highlight">
-    <h3>🔗 Important Links</h3>
+    <h3>Links</h3>
     <div class="admin-links">
         <p><strong>Admin URL:</strong> <code>https://{{.Hostname}}/admin/{{.AdminToken}}</code></p>
         <p><strong>Public Site:</strong> <a href="/" target="_blank">https://{{.Hostname}}/</a></p>
@@ -13,21 +13,21 @@
 </div>
 
 <div class="admin-section">
-    <h3>🌟 Create New Round</h3>
+    <h3>Create New Round</h3>
     <div class="card">
         <form method="POST" action="/admin/{{.AdminToken}}/round" class="form">
             <div class="form-group">
                 <label for="title">Round Title</label>
                 <input type="text" id="title" name="title" required 
-                       placeholder="Winter 2024 Book Selection">
+                       placeholder="Summer 2026 Book Selection">
             </div>
-            <button type="submit" class="btn btn-primary">✨ Create Round</button>
+            <button type="submit" class="btn btn-primary">Create Round</button>
         </form>
     </div>
 </div>
 
 <div class="admin-section">
-    <h3>📚 Manage Rounds</h3>
+    <h3>Manage Rounds</h3>
     {{if .Rounds}}
         {{range .Rounds}}
         <div class="card admin-card">
@@ -37,20 +37,20 @@
                     <p class="admin-meta">Created: {{if .Round.CreatedAt.Valid}}{{.Round.CreatedAt.Time}}{{end}}</p>
                 </div>
                 <div class="status-badge {{if eq .Round.Status "submissions_open"}}status-open{{else if eq .Round.Status "voting_open"}}status-voting{{else}}status-closed{{end}}">
-                    {{if eq .Round.Status "submissions_open"}}📝 Submissions Open
-                    {{else if eq .Round.Status "voting_open"}}🗳️ Voting Open
-                    {{else}}🔒 Closed{{end}}
+                    {{if eq .Round.Status "submissions_open"}}Submissions Open
+                    {{else if eq .Round.Status "voting_open"}}Voting Open
+                    {{else}}Closed{{end}}
                 </div>
             </div>
             
             <div class="admin-stats">
-                <span>📚 <strong>{{.SubmissionCount}}</strong> submissions</span>
-                <span>🗳️ <strong>{{.VoteCount}}</strong> votes</span>
+                <span><strong>{{.SubmissionCount}}</strong> submissions</span>
+                <span><strong>{{.VoteCount}}</strong> votes</span>
             </div>
 
             {{if eq .Round.Status "voting_open"}}
             <div class="vote-link-box">
-                <strong>🔗 Voting Link:</strong> 
+                <strong>Voting Link:</strong> 
                 <code>https://{{$.Hostname}}/vote/{{.Round.VoteCode}}</code>
             </div>
             {{end}}
@@ -59,29 +59,29 @@
                 <form method="POST" action="/admin/{{$.AdminToken}}/round/{{.Round.ID}}/status" style="display: inline;">
                     {{if eq .Round.Status "submissions_open"}}
                     <input type="hidden" name="status" value="voting_open">
-                    <button type="submit" class="btn btn-warning">Open Voting 🗳️</button>
+                    <button type="submit" class="btn btn-warning">Open Voting</button>
                     {{else if eq .Round.Status "voting_open"}}
                     <input type="hidden" name="status" value="closed">
-                    <button type="submit" class="btn btn-danger">Close Round 🔒</button>
+                    <button type="submit" class="btn btn-danger">Close Round</button>
                     {{else}}
                     <input type="hidden" name="status" value="submissions_open">
-                    <button type="submit" class="btn btn-success">Reopen Submissions 📝</button>
+                    <button type="submit" class="btn btn-success">Reopen Submissions</button>
                     {{end}}
                 </form>
                 
-                <a href="/results/{{.Round.ID}}" class="btn btn-secondary" target="_blank">View Results 📉</a>
+                <a href="/results/{{.Round.ID}}" class="btn btn-secondary" target="_blank">View Results</a>
             </div>
         </div>
         {{end}}
     {{else}}
     <div class="card">
-        <p>No rounds created yet. Create one above! 🦦</p>
+        <p>No rounds created yet. Create one above!</p>
     </div>
     {{end}}
 </div>
 
 <div class="admin-section">
-    <h3>📅 Add to Schedule</h3>
+    <h3>Add to Schedule</h3>
     <div class="card">
         <form method="POST" action="/admin/{{.AdminToken}}/schedule" class="form">
             <div class="form-row">
@@ -102,7 +102,7 @@
                 </div>
                 <div class="form-group">
                     <label for="meeting_date">Meeting Date</label>
-                    <input type="text" id="meeting_date" name="meeting_date" placeholder="e.g., Jan 15, 2024">
+                    <input type="text" id="meeting_date" name="meeting_date" placeholder="e.g., Jan 15, 2026">
                 </div>
             </div>
             
@@ -126,13 +126,13 @@
                 <textarea id="notes" name="notes" rows="3" placeholder="Optional notes about this book"></textarea>
             </div>
             
-            <button type="submit" class="btn btn-primary">✨ Add to Schedule</button>
+            <button type="submit" class="btn btn-primary">Add to Schedule</button>
         </form>
     </div>
 </div>
 
 <div class="admin-section">
-    <h3>📋 Current Schedule</h3>
+    <h3>Current Schedule</h3>
     {{if .Schedule}}
         {{range .Schedule}}
         <div class="card admin-card schedule-admin-card">
@@ -142,17 +142,17 @@
                     <p class="book-author">by {{.BookAuthor}}</p>
                 </div>
                 <div class="status-badge {{if eq .Status "reading"}}status-reading{{else if eq .Status "upcoming"}}status-upcoming{{else}}status-completed{{end}}">
-                    {{if eq .Status "reading"}}📖 Reading
-                    {{else if eq .Status "upcoming"}}⏭️ Upcoming
-                    {{else}}✅ Completed{{end}}
+                    {{if eq .Status "reading"}}Reading
+                    {{else if eq .Status "upcoming"}}Upcoming
+                    {{else}}Completed{{end}}
                 </div>
             </div>
             
             <div class="schedule-details">
-                {{if .SuggestedBy.Valid}}<p>🦦 Suggested by: {{.SuggestedBy.String}}</p>{{end}}
-                {{if .MeetingDate.Valid}}<p>📅 Meeting: {{.MeetingDate.String}}</p>{{end}}
-                {{if .ReadingProgress.Valid}}<p>📍 Progress: {{.ReadingProgress.String}}</p>{{end}}
-                {{if .Notes.Valid}}<p>📝 {{.Notes.String}}</p>{{end}}
+                {{if .SuggestedBy.Valid}}<p>Suggested by: {{.SuggestedBy.String}}</p>{{end}}
+                {{if .MeetingDate.Valid}}<p>Meeting: {{.MeetingDate.String}}</p>{{end}}
+                {{if .ReadingProgress.Valid}}<p>Progress: {{.ReadingProgress.String}}</p>{{end}}
+                {{if .Notes.Valid}}<p>{{.Notes.String}}</p>{{end}}
             </div>
 
             <details class="edit-details">
@@ -214,12 +214,12 @@
         {{end}}
     {{else}}
     <div class="card">
-        <p>No schedule entries yet. Add one above! 📅</p>
+        <p>No schedule entries yet. Add one above!</p>
     </div>
     {{end}}
 </div>
 
 <div class="otter-box">
-    <p>🔒 Keep your admin token secure! Anyone with this URL can manage the book club. 🦦</p>
+    <p>Keep your admin token secure – anyone with this URL can manage the book club.</p>
 </div>
 {{end}}

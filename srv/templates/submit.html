@@ -1,62 +1,62 @@
 {{define "content"}}
 <div class="hero">
-    <h2 class="hero-title">📚 Submit a Book ✨</h2>
-    <p class="hero-subtitle">Share your favorite book with the club!</p>
+    <h2 class="hero-title">Submit a Book</h2>
+    <p class="hero-subtitle">Share your favorite book with the club</p>
 </div>
 
 {{if .Error}}
 <div class="alert alert-error">
-    <strong>⚠️ Oops!</strong> {{.Error}}
+    <strong>Oops!</strong> {{.Error}}
 </div>
 {{end}}
 
 {{if .Success}}
 <div class="alert alert-success">
-    <strong>🎉 Success!</strong> {{.Success}}
+    <strong>Success!</strong> {{.Success}}
 </div>
 <div class="card">
-    <p>Your book has been added to the round! 🦦</p>
-    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+    <p>Your book has been added to the round!</p>
+    <a href="/" class="btn btn-primary">Back to Home</a>
 </div>
 {{else if .Round}}
 <div class="card">
-    <h3>🌟 Round: {{.Round.Title}}</h3>
-    <p>Submit one book suggestion for this round. Choose wisely! 🦦✨</p>
+    <h3>Round: {{.Round.Title}}</h3>
+    <p>Submit one book suggestion for this round. Choose wisely!</p>
     
     <form method="POST" action="/submit" class="form">
         <div class="form-group">
-            <label for="nickname">🦦 Your Nickname</label>
+            <label for="nickname">Your Nickname</label>
             <input type="text" id="nickname" name="nickname" required 
                    placeholder="OtterLover42" value="{{.Nickname}}">
-            <small>This will be public! Choose a fun name 🌟</small>
+            <small>This will be public – choose a fun name</small>
         </div>
 
         <div class="form-group">
-            <label for="book_title">📚 Book Title</label>
+            <label for="book_title">Book Title</label>
             <input type="text" id="book_title" name="book_title" required 
                    placeholder="The Midnight Library" value="{{.BookTitle}}">
         </div>
 
         <div class="form-group">
-            <label for="book_author">✍️ Author</label>
+            <label for="book_author">Author</label>
             <input type="text" id="book_author" name="book_author" required 
                    placeholder="Matt Haig" value="{{.BookAuthor}}">
         </div>
 
         <button type="submit" class="btn btn-primary btn-large">
-            ✨ Submit Book 📚
+            Submit Book
         </button>
     </form>
 </div>
 
 <div class="otter-box">
-    <p>💡 <strong>Tip:</strong> Pick a book you're genuinely excited to read and discuss! 🦦</p>
+    <p><strong>Tip:</strong> Pick a book you're genuinely excited to read and discuss!</p>
 </div>
 {{else}}
 <div class="card">
-    <h3>🔒 Submissions Closed</h3>
-    <p>Book submissions are not currently open. Check back later or see what's happening now! ✨</p>
-    <a href="/" class="btn btn-primary">Back to Home 🏠</a>
+    <h3>Submissions Closed</h3>
+    <p>Book submissions are not currently open. Check back later or see what's happening now!</p>
+    <a href="/" class="btn btn-primary">Back to Home</a>
 </div>
 {{end}}
 {{end}}
