@@ -1,5 +1,10 @@
 # Agent Instructions
 
-This is a Go web application template for exe.dev.
+This is The Otter Hole Book Club — a Go web app with SQLite.
 
-See README.md for details on the structure and components.
+Module: `github.com/acgh213/bookclub`
+Entry point: `cmd/srv/main.go`
+Handlers + templates: `srv/`
+Database: `db/` (migrations, queries, generated code)
+
+See README.md for details.

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"srv.exe.dev/db/dbgen"
+	"github.com/acgh213/bookclub/db/dbgen"
 )
 
 func TestServerSetup(t *testing.T) {

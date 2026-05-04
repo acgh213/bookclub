@@ -1,4 +1,4 @@
-module srv.exe.dev
+module github.com/acgh213/bookclub
 
 go 1.26.2
 

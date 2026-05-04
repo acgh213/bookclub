@@ -1,57 +1,62 @@
-# Go Shelley Template
+# The Otter Hole Book Club 🦦
 
-This is a starter template for building Go web applications on exe.dev. It demonstrates end-to-end usage including HTTP handlers, authentication, database integration, and deployment.
+book club app for me and my friends!! we pick books with a spinning wheel because ranked choice voting was too much lol
 
-Use this as a foundation to build your own service.
+go + sqlite, deployed on [exe.dev](https://exe.dev). lives at [bookclub.ffxxi.com](https://bookclub.ffxxi.com).
 
-## Building and Running
+## what it does
 
-Build with `make build`, then run `./srv`. The server listens on port 8000 by default.
+- anyone can submit a book for the current round
+- admin spins a wheel to pick the winner (canvas-based, very satisfying)
+- `/books` page shows everything we've read / are reading, grouped by round
+- admin dashboard for managing rounds, submissions, schedule
+- rcv algorithm is still in the codebase if i ever want it back but the wheel is more fun
 
-## Running as a systemd service
-
-To run the server as a systemd service:
-
-```bash
-# Install the service file
-sudo cp srv.service /etc/systemd/system/srv.service
-
-# Reload systemd and enable the service
-sudo systemctl daemon-reload
-sudo systemctl enable srv.service
-
-# Start the service
-sudo systemctl start srv
-
-# Check status
-systemctl status srv
-
-# View logs
-journalctl -u srv -f
-```
-
-To restart after code changes:
+## running it
 
 ```bash
 make build
-sudo systemctl restart srv
+./bookclub
 ```
 
-## Authorization
+listens on `:8000` by default, override with `-listen :3000` or whatever.
 
-exe.dev provides authorization headers and login/logout links
-that this template uses.
+needs a `db.sqlite3` in the working directory (auto-created with migrations on first run).
 
-When proxied through exed, requests will include `X-ExeDev-UserID` and
-`X-ExeDev-Email` if the user is authenticated via exe.dev.
+admin token gets generated on first boot and printed to stderr — save it! you can also set `ADMIN_TOKEN` env var to override.
 
-## Database
+## env / config
 
-This template uses sqlite (`db.sqlite3`). SQL queries are managed with sqlc.
+| var | what |
+|-----|------|
+| `ADMIN_TOKEN` | override the auto-generated admin token |
 
-## Code layout
+admin panel lives at `/admin/{token}`.
 
-- `cmd/srv`: main package (binary entrypoint)
-- `srv`: HTTP server logic (handlers)
-- `srv/templates`: Go HTML templates
-- `db`: SQLite open + migrations (001-base.sql)
+## project structure
+
+```
+cmd/srv/        entry point
+srv/            http handlers, templates, static assets
+db/             database layer, migrations, sqlc queries
+db/dbgen/       generated query code (sqlc v1.30.0)
+srv.service     systemd unit file
+```
+
+## deploying
+
+```bash
+make build
+sudo cp srv.service /etc/systemd/system/srv.service
+sudo systemctl daemon-reload && sudo systemctl enable --now srv
+```
+
+## future stuff
+
+- discord bot integration (schema already has `discord_user_id` columns)
+- maybe make the wheel sounds
+- idk we'll see
+
+---
+
+made with love and too much coffee ☕

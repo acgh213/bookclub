@@ -5,8 +5,8 @@ Description=The Otter Hole Book Club
 Type=simple
 User=exedev
 Group=exedev
-WorkingDirectory=/home/exedev/otterhole
-ExecStart=/home/exedev/otterhole/otterhole
+WorkingDirectory=/home/exedev/bookclub
+ExecStart=/home/exedev/bookclub/bookclub
 Restart=always
 RestartSec=5
 Environment=HOME=/home/exedev

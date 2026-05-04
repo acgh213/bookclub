@@ -16,8 +16,8 @@ import (
 	"strconv"
 	"strings"
 
-	"srv.exe.dev/db"
-	"srv.exe.dev/db/dbgen"
+	"github.com/acgh213/bookclub/db"
+	"github.com/acgh213/bookclub/db/dbgen"
 )
 
 //go:embed templates/* static/*
