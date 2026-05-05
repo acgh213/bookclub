@@ -1,7 +1,9 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    queries: "queries/bookclub.sql"
+    queries:
+      - "queries/bookclub.sql"
+      - "queries/v0.2.sql"
     schema: "migrations/"
     gen:
       go:
