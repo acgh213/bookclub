@@ -1,0 +1,225 @@
+{{define "content"}}
+<style>
+    body { overflow: hidden; }
+    header, footer, nav { display: none; }
+    main.container { max-width: 100%; padding: 1rem; }
+    .present-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .present-book { text-align: center; padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; cursor: pointer; transition: transform 0.2s; }
+    .present-book:hover { transform: scale(1.05); background: rgba(255,255,255,0.1); }
+    .present-book img { width: 100px; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 0.5rem; }
+    .present-book .title { font-weight: 600; font-size: 0.9rem; }
+    .present-book .author { font-size: 0.8rem; color: var(--text-secondary); }
+    .result-banner { text-align: center; padding: 2rem; margin: 1rem 0; background: linear-gradient(135deg, rgba(255,182,193,0.15), rgba(176,224,230,0.15)); border-radius: 12px; }
+    .result-banner.locked { background: linear-gradient(135deg, rgba(152,255,152,0.15), rgba(152,255,152,0.05)); }
+    .result-banner .book-title { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .result-banner .book-author { font-size: 1.2rem; color: var(--text-secondary); margin-top: 0.25rem; }
+    .btn-large { font-size: 1.3rem; padding: 0.75rem 2rem; margin: 0.5rem; }
+    .btn-disabled { opacity: 0.4; pointer-events: none; }
+    .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .status-preview { background: rgba(255,200,0,0.2); color: #ffc800; }
+    .status-locked { background: rgba(152,255,152,0.2); color: #98ff98; }
+</style>
+
+<div style="text-align: center; margin-bottom: 1rem;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 0;">🎬 {{.Round.Title}}</h2>
+    <p style="color: var(--text-secondary);">Presentation Mode</p>
+</div>
+
+{{if .Winner}}
+    {{/* LOCKED — show winner with set-as-current option */}}
+    <div class="result-banner locked">
+        <div class="status-badge status-locked" style="margin-bottom: 0.5rem;">🔒 Winner Locked</div>
+        {{if .Winner.BookID.Valid}}
+        <div class="book-title" id="winnerTitle">—</div>
+        <div class="book-author" id="winnerAuthor"></div>
+        <div style="margin-top: 1.5rem;">
+            <button id="setCurrentBtn" class="btn btn-primary btn-large" onclick="setCurrentBook({{.Round.ID}})">📚 Set as Current Book</button>
+            <p id="setCurrentStatus" style="margin-top: 0.5rem; color: var(--text-secondary); display: none;"></p>
+        </div>
+        {{end}}
+    </div>
+
+{{else if .Preview}}
+    {{/* PREVIEW — show preview result with lock option */}}
+    <div class="result-banner">
+        <div class="status-badge status-preview" style="margin-bottom: 0.5rem;">👀 Preview — Not Locked</div>
+        {{if .Preview.BookID.Valid}}
+        <div class="book-title" id="previewTitle">—</div>
+        <div class="book-author" id="previewAuthor"></div>
+        <div style="margin-top: 1.5rem;">
+            <button class="btn btn-warning btn-large" onclick="spinAgain()">🔄 Spin Again</button>
+            <button id="lockBtn" class="btn btn-success btn-large" onclick="lockResult({{.Preview.ID}})">🔒 Lock Result</button>
+            <p id="lockStatus" style="margin-top: 0.5rem; color: var(--text-secondary); display: none;"></p>
+        </div>
+        {{end}}
+    </div>
+
+{{else}}
+    {{/* NO RESULT YET — show book grid + spin button */}}
+    <div class="present-grid" id="bookGrid">
+        <p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Loading books...</p>
+    </div>
+
+    <div style="text-align: center; margin: 1.5rem 0;">
+        <div class="wheel-wrapper" style="display: inline-block;">
+            <div class="wheel-pointer"></div>
+            <canvas id="wheelCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <button id="spinBtn" class="btn btn-primary btn-large" disabled onclick="spin()">Loading...</button>
+    </div>
+
+    <div class="result-banner" id="spinResult" style="display: none;">
+        <div class="status-badge status-preview">👀 Preview</div>
+        <div class="book-title" id="spinResultTitle"></div>
+        <div class="book-author" id="spinResultAuthor"></div>
+        <div style="margin-top: 1rem;">
+            <button class="btn btn-warning btn-large" onclick="spinAgain()">🔄 Spin Again</button>
+            <button id="lockBtn2" class="btn btn-success btn-large" onclick="lockLatestResult()">🔒 Lock Result</button>
+            <p id="lockStatus2" style="margin-top: 0.5rem; color: var(--text-secondary); display: none;"></p>
+        </div>
+    </div>
+
+<script>
+const ROUND_ID = {{.Round.ID}};
+let books = [];
+let currentAngle = 0;
+let spinning = false;
+let latestResultID = 0;
+
+const colors = ['#FFB6C1','#E6E6FA','#B0E0E6','#98FF98','#FFFACD','#FFDAB9','#FF8FAB','#C9A0DC','#87CEEB','#66CDAA','#FFE4B5','#DDA0DD','#F0E68C','#AFEEEE','#FFC0CB','#D8BFD8'];
+const textColors = ['#8B3A5C','#5B4A6F','#2C5F7A','#2D5A3D','#7A6B2E','#8B5E3C','#8B2252','#5B3A8F','#2C5F7A','#2D5A3D','#7A6B2E','#6B3A7A','#6B5E2E','#2D5A5A','#8B3A5C','#5B4A6F'];
+
+const canvas = document.getElementById('wheelCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+
+function drawWheel(angle) {
+    if (!ctx || books.length === 0) return;
+    const size = 400, center = size/2, radius = size/2-10;
+    const n = books.length, arc = (2*Math.PI)/n;
+    ctx.clearRect(0, 0, size, size);
+    ctx.save(); ctx.shadowColor='rgba(180,160,220,0.4)'; ctx.shadowBlur=20;
+    ctx.beginPath(); ctx.arc(center,center,radius,0,2*Math.PI); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+    for (let i=0;i<n;i++) {
+        const sa=angle+i*arc, ea=sa+arc;
+        ctx.beginPath(); ctx.moveTo(center,center); ctx.arc(center,center,radius,sa,ea); ctx.closePath();
+        ctx.fillStyle=colors[i%colors.length]; ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=3; ctx.stroke();
+        ctx.save(); ctx.translate(center,center); ctx.rotate(sa+arc/2);
+        ctx.textAlign='right'; ctx.fillStyle=textColors[i%textColors.length];
+        let fs=14; if(n>10)fs=11; else if(n>6)fs=12;
+        ctx.font='700 '+fs+'px Quicksand,sans-serif';
+        let t=books[i].title;
+        while(ctx.measureText(t).width>radius-40 && t.length>3) t=t.slice(0,-4)+'\u2026';
+        ctx.fillText(t,radius-20,fs/3); ctx.restore();
+    }
+    ctx.beginPath(); ctx.arc(center,center,24,0,2*Math.PI); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#E0D4F5'; ctx.lineWidth=4; ctx.stroke();
+    ctx.font='700 18px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#5B4A6F'; ctx.fillText('\uD83E\uDDA6',center,center);
+}
+
+async function loadBooks() {
+    try {
+        const r = await fetch('/api/round/'+ROUND_ID+'/wheel-books');
+        books = await r.json();
+        const grid = document.getElementById('bookGrid');
+        grid.innerHTML = books.map(b => `<div class="present-book">
+            ${b.cover_url ? `<img src="${b.cover_url}" alt="${b.title}">` : `<div style="width:100px;height:150px;background:var(--bg-secondary);border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.5rem;font-size:2rem;">📖</div>`}
+            <div class="title">${b.title}</div>
+            <div class="author">${b.author}</div>
+        </div>`).join('');
+        document.getElementById('spinBtn').disabled = false;
+        document.getElementById('spinBtn').textContent = '🎡 Spin the Wheel!';
+        drawWheel(currentAngle);
+    } catch(e) { console.error(e); }
+}
+
+function getWinnerIndex(angle) {
+    const n=books.length, arc=(2*Math.PI)/n, pointer=3*Math.PI/2;
+    let offset=(pointer-(angle%(2*Math.PI)))%(2*Math.PI);
+    if(offset<0)offset+=2*Math.PI;
+    return Math.floor(offset/arc)%n;
+}
+
+function spin() {
+    if(spinning||books.length===0)return;
+    spinning=true;
+    const btn=document.getElementById('spinBtn');
+    btn.disabled=true; btn.textContent='Spinning...';
+    document.getElementById('spinResult').style.display='none';
+    const totalSpin=(5+Math.random()*5)*2*Math.PI+Math.random()*2*Math.PI;
+    const dur=4000+Math.random()*2000, startAngle=currentAngle, start=performance.now();
+    function anim(now) {
+        const t=Math.min((now-start)/dur,1), eased=1-Math.pow(1-t,3);
+        currentAngle=startAngle+totalSpin*eased;
+        drawWheel(currentAngle);
+        if(t<1) requestAnimationFrame(anim);
+        else {
+            spinning=false; btn.disabled=false; btn.textContent='🎡 Spin the Wheel!';
+            const wi=getWinnerIndex(currentAngle), w=books[wi];
+            document.getElementById('spinResultTitle').textContent=w.title;
+            document.getElementById('spinResultAuthor').textContent='by '+w.author;
+            document.getElementById('spinResult').style.display='block';
+            fetch('/api/round/'+ROUND_ID+'/spin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({book_id:w.id})})
+                .then(r=>r.json()).then(d=>{latestResultID=d.id;});
+        }
+    }
+    requestAnimationFrame(anim);
+}
+
+function spinAgain() { location.reload(); }
+
+async function lockResult(id) {
+    const btn=document.getElementById('lockBtn')||document.getElementById('lockBtn2');
+    btn.disabled=true; btn.textContent='Locking...';
+    try {
+        await fetch('/api/result/'+id+'/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmed_by:'admin'})});
+        location.reload();
+    } catch(e) { btn.disabled=false; btn.textContent='🔒 Lock Result'; }
+}
+
+async function lockLatestResult() {
+    if(latestResultID) lockResult(latestResultID);
+}
+
+async function setCurrentBook(rid) {
+    const btn=document.getElementById('setCurrentBtn');
+    btn.disabled=true; btn.textContent='Setting...';
+    const st=document.getElementById('setCurrentStatus');
+    try {
+        await fetch('/api/round/'+rid+'/set-current',{method:'POST'});
+        st.textContent='✅ Set as current book!'; st.style.display='block';
+        btn.textContent='Done!';
+    } catch(e) {
+        st.textContent='Failed: '+e.message; st.style.display='block';
+        btn.disabled=false; btn.textContent='📚 Set as Current Book';
+    }
+}
+
+// Load winner info if on locked/preview page
+async function loadBookInfo(bid, titleEl, authorEl) {
+    try {
+        const r = await fetch('/api/round/'+ROUND_ID+'/wheel-books');
+        const books = await r.json();
+        const b = books.find(x => x.id == bid);
+        if (b) { titleEl.textContent = b.title; authorEl.textContent = 'by ' + b.author; }
+    } catch(e) {}
+}
+
+{{if .Winner}}{{if .Winner.BookID.Valid}}
+loadBookInfo({{.Winner.BookID.Int64}}, document.getElementById('winnerTitle'), document.getElementById('winnerAuthor'));
+{{end}}{{end}}
+
+{{if .Preview}}{{if .Preview.BookID.Valid}}
+loadBookInfo({{.Preview.BookID.Int64}}, document.getElementById('previewTitle'), document.getElementById('previewAuthor'));
+{{end}}{{end}}
+
+{{if not .Winner}}{{if not .Preview}}
+loadBooks();
+{{end}}{{end}}
+</script>
+{{end}}
+{{end}}

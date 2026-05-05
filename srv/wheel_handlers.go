@@ -41,6 +41,10 @@ func (s *Server) handleWheelAPI(w http.ResponseWriter, r *http.Request) {
 			s.handleSpinResult(w, r, roundID)
 			return
 		}
+		if subPath == "set-current" && r.Method == http.MethodPost {
+			s.handleSetCurrentBook(w, r, roundID)
+			return
+		}
 	}
 
 	http.Error(w, "Not found", http.StatusNotFound)

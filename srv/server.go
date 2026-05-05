@@ -116,7 +116,7 @@ func (s *Server) loadTemplates() error {
 		},
 	}
 
-	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books", "library", "book_edit", "round_books"}
+	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books", "library", "book_edit", "round_books", "present"}
 	for _, page := range pages {
 		tmpl, err := template.New("").Funcs(funcMap).ParseFS(embedFS,
 			"templates/layout.html",
@@ -147,6 +147,7 @@ func (s *Server) Handler() http.Handler {
 
 // API routes
 	mux.HandleFunc("/api/round/", s.handleWheelAPI)
+	mux.HandleFunc("/api/result/", s.handleResultAPI)
 
 	// Admin routes
 	mux.HandleFunc("/admin/", s.handleAdmin)
@@ -538,6 +539,8 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			s.handleAdminUpdateRoundStatus(w, r, parts[2])
 		} else if len(parts) == 4 && parts[3] == "books" {
 			s.handleAdminRoundBooks(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "present" {
+			s.handleAdminPresent(w, r, parts[2])
 		} else if len(parts) == 5 && parts[3] == "books" && parts[4] == "add" {
 			s.handleAdminAddBookToRound(w, r, parts[2])
 		} else if len(parts) == 6 && parts[3] == "books" && parts[5] == "remove" {
