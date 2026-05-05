@@ -116,7 +116,7 @@ func (s *Server) loadTemplates() error {
 		},
 	}
 
-	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books"}
+	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books", "library", "book_edit"}
 	for _, page := range pages {
 		tmpl, err := template.New("").Funcs(funcMap).ParseFS(embedFS,
 			"templates/layout.html",
@@ -539,6 +539,31 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 	case "book":
 		if len(parts) == 2 && r.Method == "GET" {
 			s.handleAdminLookupBook(w, r)
+		} else if len(parts) == 2 && r.Method == "POST" {
+			// POST is only for lookup with q param — handled above
+			s.handleAdminLookupBook(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
+	case "books":
+		if len(parts) == 2 {
+			s.handleAdminBooks(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
+	case "library":
+		if len(parts) == 2 {
+			s.handleAdminCreateBook(w, r)
+		} else if len(parts) == 3 {
+			s.handleAdminEditBook(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "archive" {
+			s.handleAdminArchiveBook(w, r, parts[2])
+		} else {
+			http.NotFound(w, r)
+		}
+	case "import":
+		if len(parts) == 2 && r.Method == "POST" {
+			s.handleAdminImportBook(w, r)
 		} else {
 			http.NotFound(w, r)
 		}

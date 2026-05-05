@@ -1,0 +1,171 @@
+{{define "content"}}
+<h2>📚 Book Library</h2>
+
+<p style="color: var(--text-secondary); margin-bottom: 2rem;">
+    {{.BookCount}} book{{if ne .BookCount 1}}s{{end}} in the library
+</p>
+
+<div style="margin-bottom: 2rem;">
+    <details>
+        <summary style="cursor: pointer; font-weight: 600; color: var(--accent); font-size: 1.1rem;">
+            ➕ Add Book Manually
+        </summary>
+        <form method="POST" action="/admin/{{.AdminToken}}/library" style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label>Title *</label>
+                    <input type="text" name="title" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div>
+                    <label>Author *</label>
+                    <input type="text" name="author" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div>
+                    <label>Submitter</label>
+                    <input type="text" name="submitter" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div>
+                    <label>Page Count</label>
+                    <input type="number" name="page_count" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Tags (comma-separated)</label>
+                    <input type="text" name="tags" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Pitch / Notes</label>
+                    <textarea name="pitch" rows="2" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);"></textarea>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Description</label>
+                    <textarea name="description" rows="3" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);"></textarea>
+                </div>
+                <div>
+                    <label>Cover URL</label>
+                    <input type="url" name="cover_url" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div>
+                    <label>ISBN</label>
+                    <input type="text" name="isbn" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Content Notes</label>
+                    <textarea name="content_notes" rows="2" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);"></textarea>
+                </div>
+            </div>
+            <input type="hidden" name="metadata_source" value="manual">
+            <button type="submit" class="btn" style="margin-top: 1rem;">Add Book</button>
+        </form>
+    </details>
+</div>
+
+<div style="margin-bottom: 2rem;">
+    <details>
+        <summary style="cursor: pointer; font-weight: 600; color: var(--accent); font-size: 1.1rem;">
+            🔍 Search & Import
+        </summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+            <form id="lookup-form" onsubmit="lookupBook(event)">
+                <input type="text" id="lookup-query" placeholder="Search by title or author..." style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text); margin-bottom: 0.5rem;">
+                <button type="submit" class="btn">Search</button>
+            </form>
+            <div id="lookup-results" style="margin-top: 1rem;"></div>
+        </div>
+    </details>
+</div>
+
+<h3 style="margin-top: 2rem;">All Books</h3>
+
+{{if .Books}}
+<table style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--border);">
+            <th style="padding: 0.5rem;">Cover</th>
+            <th style="padding: 0.5rem;">Title</th>
+            <th style="padding: 0.5rem;">Author</th>
+            <th style="padding: 0.5rem;">Status</th>
+            <th style="padding: 0.5rem;">Added</th>
+            <th style="padding: 0.5rem;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Books}}
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 0.5rem;">
+                {{if .CoverUrl.String}}
+                <img src="{{.CoverUrl.String}}" alt="cover" style="width: 40px; height: 60px; object-fit: cover; border-radius: 3px;">
+                {{else}}
+                <div style="width: 40px; height: 60px; background: var(--bg-secondary); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">📖</div>
+                {{end}}
+            </td>
+            <td style="padding: 0.5rem; font-weight: 600;">{{.Title}}</td>
+            <td style="padding: 0.5rem; color: var(--text-secondary);">{{.Author}}</td>
+            <td style="padding: 0.5rem;">
+                <span class="status-{{.Status}}">{{.Status}}</span>
+            </td>
+            <td style="padding: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                {{.CreatedAt}}
+            </td>
+            <td style="padding: 0.5rem;">
+                <a href="/admin/{{$.AdminToken}}/library/{{.ID}}" class="btn-sm">Edit</a>
+                <form method="POST" action="/admin/{{$.AdminToken}}/library/{{.ID}}/archive" style="display: inline;" onsubmit="return confirm('Archive this book?');">
+                    <button type="submit" class="btn-sm btn-danger">Archive</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p style="color: var(--text-secondary); padding: 2rem; text-align: center;">
+    No books in the library yet. Add some above!
+</p>
+{{end}}
+
+<script>
+async function lookupBook(e) {
+    e.preventDefault();
+    const query = document.getElementById('lookup-query').value;
+    const results = document.getElementById('lookup-results');
+    results.innerHTML = '<p>Searching...</p>';
+
+    try {
+        const resp = await fetch(`/admin/{{.AdminToken}}/book?q=${encodeURIComponent(query)}`);
+        const data = await resp.json();
+
+        if (!data || data.length === 0) {
+            results.innerHTML = '<p style="color: var(--text-secondary);">No results found.</p>';
+            return;
+        }
+
+        let html = '<div style="display: grid; gap: 0.5rem;">';
+        for (const book of data) {
+            html += `<form method="POST" action="/admin/{{.AdminToken}}/import" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                ${book.cover_url ? `<img src="${book.cover_url}" alt="cover" style="width: 50px; height: 75px; object-fit: cover; border-radius: 3px;">` : '<div style="width: 50px; height: 75px; background: var(--bg-secondary); border-radius: 3px; display: flex; align-items: center; justify-content: center;">📖</div>'}
+                <div style="flex: 1;">
+                    <strong>${book.title}</strong>
+                    <span style="color: var(--text-secondary);"> by ${book.author || 'Unknown'}</span>
+                    ${book.year ? `<span style="color: var(--text-secondary);"> (${book.year})</span>` : ''}
+                    ${book.description ? `<p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">${book.description.substring(0, 200)}...</p>` : ''}
+                    ${book.page_count ? `<small>${book.page_count} pages</small>` : ''}
+                    ${book.isbn ? `<small style="margin-left: 1rem;">ISBN: ${book.isbn}</small>` : ''}
+                </div>
+                <input type="hidden" name="title" value="${book.title}">
+                <input type="hidden" name="author" value="${book.author}">
+                <input type="hidden" name="description" value="${book.description || ''}">
+                <input type="hidden" name="cover_url" value="${book.cover_url || ''}">
+                <input type="hidden" name="page_count" value="${book.page_count || ''}">
+                <input type="hidden" name="isbn" value="${book.isbn || ''}">
+                <input type="hidden" name="metadata_source" value="${book.source}">
+                <input type="hidden" name="metadata_id" value="${book.source_id}">
+                <button type="submit" class="btn-sm">Import</button>
+            </form>`;
+        }
+        html += '</div>';
+        results.innerHTML = html;
+    } catch (err) {
+        results.innerHTML = `<p style="color: var(--danger);">Lookup failed: ${err.message}. Make sure BOOKS_API_KEY is set.</p>`;
+    }
+}
+</script>
+{{end}}
