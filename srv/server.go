@@ -145,6 +145,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/results/", s.handleResults)
 	mux.HandleFunc("/schedule", s.handleSchedule)
 
+// API routes
+	mux.HandleFunc("/api/round/", s.handleWheelAPI)
+
 	// Admin routes
 	mux.HandleFunc("/admin/", s.handleAdmin)
 

@@ -18,10 +18,10 @@
     <p>The wheel has spoken!</p>
     <a href="/" class="btn btn-primary">Back to Home</a>
 </div>
-{{else if .Submissions}}
+{{else if .Round}}
 <div class="card">
     <h3>Round: {{.Round.Title}}</h3>
-    <p>{{len .Submissions}} books in the running. Spin the wheel to find out what we're reading next!</p>
+    <p id="bookCount">Loading books...</p>
 </div>
 
 <div class="wheel-wrapper">
@@ -30,7 +30,7 @@
 </div>
 
 <div class="wheel-controls">
-    <button id="spinBtn" class="btn btn-primary btn-large">Spin the Wheel</button>
+    <button id="spinBtn" class="btn btn-primary btn-large" disabled>Loading...</button>
 </div>
 
 <div id="wheelResult" class="wheel-result" style="display:none;">
@@ -38,34 +38,46 @@
         <div class="winner-banner" id="resultTitle"></div>
         <p class="book-author" id="resultAuthor"></p>
         <p class="book-submitter" id="resultSubmitter"></p>
+        <p id="resultSaved" style="display:none;" class="alert alert-success">Result recorded!</p>
     </div>
 </div>
 
 <div class="card info-card">
     <h3>The Books</h3>
-    <div class="wheel-book-list">
-        {{range .Submissions}}
-        <div class="wheel-book-item">
-            <strong>{{.BookTitle}}</strong>
-            <span class="book-author">by {{.BookAuthor}}</span>
-            <span class="book-submitter">— {{.Nickname}}</span>
-        </div>
-        {{end}}
-    </div>
+    <div class="wheel-book-list" id="bookList"></div>
 </div>
 
 <script>
 (function() {
-    const books = [
-        {{range .Submissions}}
-        {
-            id: {{.ID}},
-            title: {{jsonStr .BookTitle}},
-            author: {{jsonStr .BookAuthor}},
-            nickname: {{jsonStr .Nickname}}
-        },
-        {{end}}
-    ];
+    const roundID = {{.Round.ID}};
+    let books = [];
+
+    // Fetch books from API
+    fetch('/api/round/' + roundID + '/wheel-books')
+        .then(response => response.json())
+        .then(data => {
+            books = data;
+            document.getElementById('bookCount').textContent = books.length + ' books in the running. Spin the wheel to find out what we\'re reading next!';
+
+            // Populate book list
+            const bookList = document.getElementById('bookList');
+            books.forEach(book => {
+                const div = document.createElement('div');
+                div.className = 'wheel-book-item';
+                div.innerHTML = '<strong>' + escapeHtml(book.title) + '</strong>' +
+                    '<span class="book-author">by ' + escapeHtml(book.author) + '</span>';
+                bookList.appendChild(div);
+            });
+
+            // Enable spin button and draw wheel
+            document.getElementById('spinBtn').disabled = false;
+            document.getElementById('spinBtn').textContent = 'Spin the Wheel';
+            drawWheel(currentAngle);
+        })
+        .catch(err => {
+            console.error('Failed to load books:', err);
+            document.getElementById('bookCount').textContent = 'Failed to load books. Please refresh and try again.';
+        });
 
     const colors = [
         '#FFB6C1', '#E6E6FA', '#B0E0E6', '#98FF98',
@@ -88,13 +100,18 @@
     const size = 500;
     const center = size / 2;
     const radius = size / 2 - 10;
-    const n = books.length;
-    const arc = (2 * Math.PI) / n;
+    let n = 0;
+    let arc = 0;
 
     let currentAngle = 0;
     let spinning = false;
 
     function drawWheel(angle) {
+        if (books.length === 0) return;
+
+        n = books.length;
+        arc = (2 * Math.PI) / n;
+
         ctx.clearRect(0, 0, size, size);
 
         // Shadow
@@ -170,7 +187,7 @@
     }
 
     function spin() {
-        if (spinning) return;
+        if (spinning || books.length === 0) return;
         spinning = true;
         spinBtn.disabled = true;
         spinBtn.textContent = 'Spinning...';
@@ -205,9 +222,24 @@
 
                 document.getElementById('resultTitle').textContent = winner.title;
                 document.getElementById('resultAuthor').textContent = 'by ' + winner.author;
-                document.getElementById('resultSubmitter').textContent = 'Suggested by ' + winner.nickname;
+                document.getElementById('resultSubmitter').textContent = 'Book ID: ' + winner.id;
                 resultDiv.style.display = 'block';
                 resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Save spin result to server
+                fetch('/api/round/' + roundID + '/spin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ book_id: winner.id })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('resultSaved').style.display = 'block';
+                    }
+                })
+                .catch(err => console.error('Failed to save spin result:', err));
             }
         }
 
@@ -215,7 +247,13 @@
     }
 
     spinBtn.addEventListener('click', spin);
-    drawWheel(currentAngle);
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 })();
 </script>
 {{else}}
