@@ -9,6 +9,7 @@
     <div class="admin-links">
         <p><strong>Admin URL:</strong> <code>https://{{.Hostname}}/admin/{{.AdminToken}}</code></p>
         <p><strong>Public Site:</strong> <a href="/" target="_blank">https://{{.Hostname}}/</a></p>
+        <p><strong>📚 Library:</strong> <a href="/admin/{{.AdminToken}}/books">Manage Books</a></p>
     </div>
 </div>
 
@@ -69,6 +70,7 @@
                     {{end}}
                 </form>
                 
+                <a href="/admin/{{$.AdminToken}}/round/{{.Round.ID}}/books" class="btn btn-secondary">Manage Books</a>
                 <a href="/results/{{.Round.ID}}" class="btn btn-secondary" target="_blank">View Results</a>
             </div>
 

@@ -116,7 +116,7 @@ func (s *Server) loadTemplates() error {
 		},
 	}
 
-	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books", "library", "book_edit"}
+	pages := []string{"home", "submit", "vote", "results", "schedule", "admin", "books", "library", "book_edit", "round_books"}
 	for _, page := range pages {
 		tmpl, err := template.New("").Funcs(funcMap).ParseFS(embedFS,
 			"templates/layout.html",
@@ -533,6 +533,12 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			s.handleAdminCreateRound(w, r)
 		} else if len(parts) == 4 && parts[3] == "status" {
 			s.handleAdminUpdateRoundStatus(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "books" {
+			s.handleAdminRoundBooks(w, r, parts[2])
+		} else if len(parts) == 5 && parts[3] == "books" && parts[4] == "add" {
+			s.handleAdminAddBookToRound(w, r, parts[2])
+		} else if len(parts) == 6 && parts[3] == "books" && parts[5] == "remove" {
+			s.handleAdminRemoveBookFromRound(w, r, parts[2], parts[4])
 		} else {
 			http.NotFound(w, r)
 		}
