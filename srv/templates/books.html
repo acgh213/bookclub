@@ -1,44 +1,75 @@
 {{define "content"}}
 <div class="hero">
-    <h2 class="hero-title">Book List</h2>
-    <p class="hero-subtitle">Every book submitted to The Otter Hole</p>
+    <h2 class="hero-title">📚 Book Library</h2>
+    <p class="hero-subtitle">{{if .HasLibrary}}{{.BookCount}} book{{if ne .BookCount 1}}s{{end}} in the library{{else}}Browse our collection{{end}}</p>
 </div>
 
-{{if .HasBooks}}
-    {{range .Groups}}
-    <div class="schedule-section">
-        <h3 class="section-title">{{.RoundTitle}}
-            <span class="status-badge {{if eq .RoundStatus "submissions_open"}}status-open{{else if eq .RoundStatus "voting_open"}}status-voting{{else}}status-closed{{end}} status-badge-inline">
-                {{if eq .RoundStatus "submissions_open"}}Submissions Open
-                {{else if eq .RoundStatus "voting_open"}}Voting Open
-                {{else}}Closed{{end}}
-            </span>
-        </h3>
+{{if .HasLibrary}}
+{{/* Search + filters */}}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="GET" action="/books" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <input type="text" name="q" value="{{.Query}}" placeholder="Search books..." 
+               style="flex: 1; min-width: 200px; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+        <select name="status" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+            <option value="">All Statuses</option>
+            <option value="proposed" {{if eq .Status "proposed"}}selected{{end}}>Proposed</option>
+            <option value="eligible" {{if eq .Status "eligible"}}selected{{end}}>Eligible</option>
+            <option value="selected" {{if eq .Status "selected"}}selected{{end}}>Selected</option>
+            <option value="read" {{if eq .Status "read"}}selected{{end}}>Read</option>
+        </select>
+        <select name="sort" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+            <option value="recent" {{if eq .Sort "recent"}}selected{{end}}>Recently Added</option>
+            <option value="title" {{if eq .Sort "title"}}selected{{end}}>Title A–Z</option>
+            <option value="author" {{if eq .Sort "author"}}selected{{end}}>Author A–Z</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        {{if .Query}}<a href="/books" class="btn btn-secondary">Clear</a>{{end}}
+    </form>
+</div>
+
+{{/* Book grid */}}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+    {{range .LibraryBooks}}
+    <div class="card" style="text-align: center;">
+        {{if .CoverUrl.Valid}}
+        <img src="{{.CoverUrl.String}}" alt="{{.Title}}" style="width: 120px; height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 0.75rem; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+        {{else}}
+        <div style="width: 120px; height: 180px; background: var(--bg-secondary); border-radius: 6px; margin: 0 auto 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+            📖
+        </div>
+        {{end}}
+        <h3 style="font-size: 1rem; margin: 0 0 0.25rem 0;">{{.Title}}</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.5rem 0;">by {{.Author}}</p>
+        {{if .PageCount.Valid}}<p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">{{.PageCount.Int64}} pages</p>{{end}}
+        <span class="status-badge status-{{.Status}}" style="display: inline-block; margin-top: 0.5rem; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; background: rgba(255,255,255,0.05);">
+            {{.Status}}
+        </span>
+        {{if .Pitch.Valid}}<p style="font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin-top: 0.5rem;">"{{.Pitch.String}}"</p>{{end}}
+    </div>
+    {{end}}
+</div>
+{{else}}
+{{/* Legacy: show submissions grouped by round */}}
+{{if .Groups}}
+{{range .Groups}}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3>{{.RoundTitle}} <span style="color: var(--text-secondary); font-size: 0.9rem;">({{.RoundStatus}})</span></h3>
+    <div style="display: grid; gap: 0.5rem; margin-top: 1rem;">
         {{range .Books}}
-        <div class="card book-list-card">
-            <div class="book-list-row">
-                <div class="book-list-info">
-                    <h4 class="book-title">{{.BookTitle}}</h4>
-                    <p class="book-author">by {{.BookAuthor}}</p>
-                </div>
-                <div class="book-list-meta">
-                    <span class="book-submitter">Submitted by <strong>{{.Nickname}}</strong></span>
-                </div>
-            </div>
+        <div style="padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
+            <strong>{{.BookTitle}}</strong> by {{.BookAuthor}}
+            <span style="color: var(--text-secondary);">— {{.Nickname}}</span>
         </div>
         {{end}}
     </div>
-    {{end}}
-{{else}}
-<div class="card">
-    <h3>No Books Yet</h3>
-    <p>No books have been submitted yet. Be the first!</p>
-    <a href="/submit" class="btn btn-primary">Submit a Book</a>
 </div>
 {{end}}
-
+{{else}}
 <div class="card">
-    <a href="/" class="btn btn-primary">Back to Home</a>
-    <a href="/submit" class="btn btn-secondary">Submit a Book</a>
+    <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+        No books in the library yet. <a href="/submit" style="color: var(--accent);">Submit a book</a> to get started!
+    </p>
 </div>
+{{end}}
+{{end}}
 {{end}}

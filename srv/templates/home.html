@@ -1,82 +1,100 @@
 {{define "content"}}
+{{if .CurrentBook}}
 <div class="hero">
-    <h2 class="hero-title">Welcome to The Otter Hole 🦦</h2>
-    <p class="hero-subtitle">A cozy book club for curious readers</p>
+    <h2 class="hero-title">📖 Currently Reading</h2>
 </div>
 
-{{if .CurrentRound}}
-<div class="card">
-    <h3>Current Round: {{.CurrentRound.Title}}</h3>
-    
-    {{if eq .CurrentRound.Status "submissions_open"}}
-        <div class="status-badge status-open">Submissions Open</div>
-        <p>We're collecting book suggestions! Submit your favorite book below.</p>
-        <p class="stat"><strong>{{.SubmissionCount}}</strong> books submitted so far</p>
-        <a href="/submit" class="btn btn-primary">Submit a Book</a>
-    {{else if eq .CurrentRound.Status "voting_open"}}
-        <div class="status-badge status-voting">Wheel Spin Open</div>
-        <p>Time to spin the wheel and pick our next book!</p>
-        <p class="stat"><strong>{{.SubmissionCount}}</strong> books in the running</p>
-        <a href="/vote/{{.CurrentRound.VoteCode}}" class="btn btn-primary">Spin the Wheel</a>
-    {{else if eq .CurrentRound.Status "closed"}}
-        <div class="status-badge status-closed">Voting Closed</div>
-        <p>This round has ended. Check out the results!</p>
-        <a href="/results/{{.CurrentRound.ID}}" class="btn btn-secondary">View Results</a>
+<div class="card highlight" style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;">
+    {{if .CurrentBook.CoverUrl.Valid}}
+    <div style="flex-shrink: 0;">
+        <img src="{{.CurrentBook.CoverUrl.String}}" alt="{{.CurrentBook.Title}}" 
+             style="width: 160px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    </div>
+    {{else}}
+    <div style="flex-shrink: 0; width: 160px; height: 240px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+        📖
+    </div>
     {{end}}
+    
+    <div style="flex: 1; min-width: 250px;">
+        <h2 style="font-size: 1.8rem; margin: 0 0 0.25rem 0; color: var(--text);">{{.CurrentBook.Title}}</h2>
+        <p style="font-size: 1.2rem; color: var(--text-secondary); margin: 0 0 1rem 0;">by {{.CurrentBook.Author}}</p>
+        
+        {{if .CurrentBook.PageCount.Valid}}
+        <p style="color: var(--text-secondary);">{{.CurrentBook.PageCount.Int64}} pages{{if .CurrentBook.Isbn.Valid}} · ISBN: {{.CurrentBook.Isbn.String}}{{end}}</p>
+        {{end}}
+        
+        {{if .CurrentBook.Pitch.Valid}}
+        <p style="font-style: italic; color: var(--text-secondary); margin-top: 0.5rem;">"{{.CurrentBook.Pitch.String}}"</p>
+        {{end}}
+        
+        {{if .CurrentBook.Description.Valid}}
+        <details style="margin-top: 1rem;">
+            <summary style="cursor: pointer; color: var(--accent);">About this book</summary>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.6;">{{.CurrentBook.Description.String}}</p>
+        </details>
+        {{end}}
+
+        <div style="margin-top: 1rem;">
+            <span class="status-badge" style="background: rgba(152,255,152,0.2); color: #98ff98; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                {{.CurrentBook.Status}}
+            </span>
+        </div>
+    </div>
 </div>
-{{else}}
-<div class="card">
-    <h3>No Active Round</h3>
-    <p>Check back soon for the next book selection round!</p>
-</div>
-{{end}}
 
 {{if .CurrentReading}}
-<div class="card highlight">
-    <h3>Currently Reading</h3>
-    <div class="book-info">
-        <h4 class="book-title">{{.CurrentReading.BookTitle}}</h4>
-        <p class="book-author">by {{.CurrentReading.BookAuthor}}</p>
-        {{if .CurrentReading.SuggestedBy.Valid}}
-        <p class="suggested-by">Suggested by: {{.CurrentReading.SuggestedBy.String}}</p>
+<div class="card" style="margin-top: 1rem;">
+    <h3>📅 Reading Schedule</h3>
+    <p>
+        {{if .CurrentReading.MeetingDate.Valid}}
+        <strong>Meeting:</strong> {{.CurrentReading.MeetingDate.String}}<br>
         {{end}}
         {{if .CurrentReading.ReadingProgress.Valid}}
-        <p class="progress">Progress: {{.CurrentReading.ReadingProgress.String}}</p>
+        <strong>Progress:</strong> {{.CurrentReading.ReadingProgress.String}}
         {{end}}
-        {{if .CurrentReading.MeetingDate.Valid}}
-        <p class="meeting-date">Next meeting: {{.CurrentReading.MeetingDate.String}}</p>
-        {{end}}
-    </div>
+    </p>
+    {{if .CurrentReading.Notes.Valid}}
+    <p style="color: var(--text-secondary); margin-top: 0.5rem;">{{.CurrentReading.Notes.String}}</p>
+    {{end}}
 </div>
 {{end}}
 
-{{if .NextBook}}
+{{else if .NextBook}}
+<div class="hero">
+    <h2 class="hero-title">📚 Coming Up Next</h2>
+    <p class="hero-subtitle">No book currently selected. Here's what's next:</p>
+</div>
+<div class="card highlight">
+    <h3>{{.NextBook.BookTitle}}</h3>
+    <p class="book-author">by {{.NextBook.BookAuthor}}</p>
+    {{if .NextBook.MeetingDate.Valid}}<p>Meeting: {{.NextBook.MeetingDate.String}}</p>{{end}}
+</div>
+
+{{else if .CurrentRound}}
+<div class="hero">
+    <h2 class="hero-title">🦦 {{.CurrentRound.Title}}</h2>
+    <p class="hero-subtitle">{{.SubmissionCount}} submissions · {{.VoteCount}} votes · <a href="/submit" style="color: var(--accent);">submit a book</a></p>
+</div>
 <div class="card">
-    <h3>Up Next</h3>
-    <div class="book-info">
-        <h4 class="book-title">{{.NextBook.BookTitle}}</h4>
-        <p class="book-author">by {{.NextBook.BookAuthor}}</p>
-        {{if .NextBook.SuggestedBy.Valid}}
-        <p class="suggested-by">Suggested by: {{.NextBook.SuggestedBy.String}}</p>
-        {{end}}
-        {{if .NextBook.MeetingDate.Valid}}
-        <p class="meeting-date">Scheduled for: {{.NextBook.MeetingDate.String}}</p>
-        {{end}}
-    </div>
+    <h3>No Current Book</h3>
+    <p>No book has been selected yet. The wheel hasn't spoken!</p>
+    <p><a href="/books" class="btn btn-primary">Browse the Library</a></p>
+</div>
+
+{{else}}
+<div class="hero">
+    <h2 class="hero-title">🦦 The Otter Hole Book Club</h2>
+    <p class="hero-subtitle">No rounds are currently active. An admin will set one up soon!</p>
+</div>
+<div class="card">
+    <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+        Check back later for our next book pick. In the meantime, why not <a href="/books" style="color: var(--accent);">browse the library</a>?
+    </p>
 </div>
 {{end}}
 
-<div class="card info-card">
-    <h3>How It Works</h3>
-    <ol class="how-it-works">
-        <li><strong>Submit</strong> – Share a book you'd love to read together</li>
-        <li><strong>Spin</strong> – Give the wheel a spin to pick the next book</li>
-        <li><strong>Winner</strong> – Whatever the wheel lands on, we read it together</li>
-        <li><strong>Read</strong> – Join the discussion and enjoy the book club vibes</li>
-    </ol>
-</div>
-
-<div class="otter-box">
-    <p>Every otter gets a spin 🦦</p>
+<div class="otter-box" style="margin-top: 2rem;">
+    <p>Keep reading, stay curious. 🦦</p>
 </div>
 {{end}}

@@ -170,6 +170,7 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 		currentRound    *dbgen.Round
 		currentReading  *dbgen.Schedule
 		nextBook        *dbgen.Schedule
+		currentBook     *dbgen.Book
 		submissionCount int64
 		voteCount       int64
 	)
@@ -185,11 +186,15 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	if sch, err := s.queries.GetNextUpcoming(ctx); err == nil {
 		nextBook = &sch
 	}
+	if bk, err := s.queries.GetCurrentBook(ctx); err == nil {
+		currentBook = &bk
+	}
 
 	s.renderTemplate(w, "home", map[string]interface{}{
 		"CurrentRound":    currentRound,
 		"CurrentReading":  currentReading,
 		"NextBook":        nextBook,
+		"CurrentBook":     currentBook,
 		"SubmissionCount": submissionCount,
 		"VoteCount":       voteCount,
 	})
@@ -467,36 +472,87 @@ func (s *Server) handleResults(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleBooks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	books, err := s.queries.ListAllSubmissions(ctx)
-	if err != nil {
-		http.Error(w, "Failed to load books", http.StatusInternalServerError)
-		return
-	}
 
-	// Group by round for template rendering
 	type RoundGroup struct {
 		RoundTitle  string
 		RoundStatus string
 		Books       []dbgen.ListAllSubmissionsRow
 	}
-	var groups []RoundGroup
-	groupMap := make(map[string]int) // roundTitle -> index in groups
-	for _, b := range books {
-		idx, ok := groupMap[b.RoundTitle]
-		if !ok {
-			idx = len(groups)
-			groupMap[b.RoundTitle] = idx
-			groups = append(groups, RoundGroup{
-				RoundTitle:  b.RoundTitle,
-				RoundStatus: b.RoundStatus,
-			})
+
+	query := r.URL.Query().Get("q")
+	status := r.URL.Query().Get("status")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "recent"
+	}
+
+	var libraryBooks []dbgen.Book
+	var hasLibrary bool
+
+	if query != "" {
+		q := sql.NullString{String: query, Valid: true}
+		results, err := s.queries.SearchBooks(ctx, dbgen.SearchBooksParams{
+			Column1: q,
+			Column2: q,
+			Column3: q,
+		})
+		if err == nil {
+			libraryBooks = results
+			hasLibrary = len(libraryBooks) > 0
 		}
-		groups[idx].Books = append(groups[idx].Books, b)
+	} else if status != "" {
+		results, err := s.queries.ListBooksByStatus(ctx, status)
+		if err == nil {
+			libraryBooks = results
+			hasLibrary = len(libraryBooks) > 0
+		}
+	} else {
+		results, err := s.queries.ListBooks(ctx)
+		if err == nil {
+			libraryBooks = results
+			hasLibrary = len(libraryBooks) > 0
+		}
+	}
+
+	// Sort library books
+	if sortBy == "title" {
+		sort.Slice(libraryBooks, func(i, j int) bool {
+			return strings.ToLower(libraryBooks[i].Title) < strings.ToLower(libraryBooks[j].Title)
+		})
+	} else if sortBy == "author" {
+		sort.Slice(libraryBooks, func(i, j int) bool {
+			return strings.ToLower(libraryBooks[i].Author) < strings.ToLower(libraryBooks[j].Author)
+		})
+	}
+
+	// Legacy submissions (shown below library if no library books)
+	var groups []RoundGroup
+	if !hasLibrary {
+		legacyBooks, _ := s.queries.ListAllSubmissions(ctx)
+		groupMap := make(map[string]int)
+		for _, b := range legacyBooks {
+			idx, ok := groupMap[b.RoundTitle]
+			if !ok {
+				idx = len(groups)
+				groupMap[b.RoundTitle] = idx
+				groups = append(groups, RoundGroup{
+					RoundTitle:  b.RoundTitle,
+					RoundStatus: b.RoundStatus,
+				})
+			}
+			groups[idx].Books = append(groups[idx].Books, b)
+		}
 	}
 
 	s.renderTemplate(w, "books", map[string]interface{}{
-		"Groups":   groups,
-		"HasBooks": len(books) > 0,
+		"Groups":       groups,
+		"HasBooks":     hasLibrary || len(groups) > 0,
+		"LibraryBooks": libraryBooks,
+		"HasLibrary":   hasLibrary,
+		"Query":        query,
+		"Status":       status,
+		"Sort":         sortBy,
+		"BookCount":    len(libraryBooks),
 	})
 }
 
@@ -584,6 +640,8 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			s.handleAdminUpdateSubmission(w, r, parts[2])
 		} else if len(parts) == 4 && parts[3] == "delete" {
 			s.handleAdminDeleteSubmission(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "promote" {
+			s.handleAdminPromoteSubmission(w, r, parts[2])
 		} else {
 			http.NotFound(w, r)
 		}
