@@ -29,6 +29,7 @@ type Server struct {
 	hostname   string
 	adminToken string
 	templates  map[string]*template.Template
+	metadata   BookMetadataService
 }
 
 func New(dbPath, hostname string) (*Server, error) {
@@ -45,6 +46,7 @@ func New(dbPath, hostname string) (*Server, error) {
 		db:       database,
 		queries:  dbgen.New(database),
 		hostname: hostname,
+		metadata: resolveMetadataService(),
 	}
 
 	if err := s.initAdminToken(); err != nil {
@@ -531,6 +533,12 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			s.handleAdminCreateRound(w, r)
 		} else if len(parts) == 4 && parts[3] == "status" {
 			s.handleAdminUpdateRoundStatus(w, r, parts[2])
+		} else {
+			http.NotFound(w, r)
+		}
+	case "book":
+		if len(parts) == 2 && r.Method == "GET" {
+			s.handleAdminLookupBook(w, r)
 		} else {
 			http.NotFound(w, r)
 		}
