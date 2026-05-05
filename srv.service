@@ -6,7 +6,7 @@ Type=simple
 User=exedev
 Group=exedev
 WorkingDirectory=/home/exedev/bookclub
-ExecStart=/home/exedev/bookclub/bookclub
+ExecStart=/home/exedev/bookclub/bookclub -listen :8085 -hostname bookclub.exe.xyz
 Restart=always
 RestartSec=5
 Environment=HOME=/home/exedev

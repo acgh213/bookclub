@@ -8,7 +8,10 @@ import (
 	"github.com/acgh213/bookclub/srv"
 )
 
-var flagListenAddr = flag.String("listen", ":8000", "address to listen on")
+var (
+	flagListenAddr = flag.String("listen", ":8000", "address to listen on")
+	flagHostname   = flag.String("hostname", "bookclub.ffxxi.com", "public hostname for admin URL display")
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -19,8 +22,7 @@ func main() {
 
 func run() error {
 	flag.Parse()
-	hostname := "bookclub.ffxxi.com"
-	server, err := srv.New("db.sqlite3", hostname)
+	server, err := srv.New("db.sqlite3", *flagHostname)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}
