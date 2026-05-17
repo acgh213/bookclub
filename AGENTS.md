@@ -12,7 +12,7 @@ app listens on `:8000`).
 - **Module**: `github.com/acgh213/bookclub`
 - **Entry point**: `cmd/srv/main.go` — flags for `-listen` and `-hostname`
 - **Server**: `srv/server.go` — HTTP handlers, template rendering, RCV algorithm (legacy, still present)
-- **Handler files**: `srv/admin_books.go` (library CRUD), `srv/admin_present.go` (presentation mode + result confirm/lock), `srv/admin_promote.go` (submission → library promotion), `srv/admin_rounds.go` (round book pool management), `srv/wheel_handlers.go` (wheel API: fetch books, record spin, set current book), `srv/metadata.go` (book metadata lookup via Google Books API or manual fallback)
+- **Handler files**: `srv/admin_books.go` (library CRUD), `srv/admin_present.go` (presentation mode + result confirm/lock), `srv/admin_promote.go` (submission → library promotion), `srv/admin_rounds.go` (round book pool management), `srv/wheel_handlers.go` (wheel API: fetch books, record spin, set current book), `srv/metadata.go` (book metadata lookup via Google Books API or manual fallback), `srv/progress_handlers.go` (reading week management, check-ins)
 - **Templates**: `srv/templates/` — layout.html + page templates (home, submit, vote, results, schedule, admin, books, library, book_edit, round_books, present)
 - **Static assets**: `srv/static/style.css`, `srv/static/script.js` — embedded via `//go:embed`
 - **Database**: SQLite at `db.sqlite3` (gitignored), auto-created on first run
@@ -22,19 +22,23 @@ app listens on `:8000`).
 - **Systemd**: `srv.service` → `/etc/systemd/system/srv.service`
 - **Binary**: `bookclub` (gitignored)
 
-## Database Schema (3 migrations)
+## Database Schema (4 migrations)
 
 ### Core tables (002)
 - `config` — key/value store (admin_token)
 - `rounds` — book selection rounds with status (submissions_open, voting_open, closed) and vote_code
-- `submissions` — user book submissions per round (nickname, book_title, book_author)
-- `votes` / `vote_rankings` — RCV voting (legacy, still functional)
-- `schedule` — reading schedule entries with status (upcoming, reading, completed)
+- `submissions` — user book submissions per round (nickname, book_title, book_author) — NO uniqueness constraint, same person can submit multiple books
+- `votes` / `vote_rankings` — RCV voting (legacy, still functional) — NO uniqueness on nickname
+- `schedule` — reading schedule entries with status (upcoming, reading, completed), total_chapters, cover_url
 
 ### Library tables (003)
 - `books` — standalone curated library with rich metadata (title, author, submitter, pitch, tags, page_count, description, content_notes, cover_url, isbn, metadata_source, metadata_id, status, deleted_at)
 - `round_entries` — junction table linking books to rounds (replaces submissions for wheel)
 - `round_results` — recorded spin results with preview→lock workflow (confirmed flag)
+
+### Progress tracking tables (004)
+- `reading_weeks` — week-by-week chapter assignments per schedule entry (week_number, start_chapter, end_chapter, discussion_date)
+- `checkins` — member check-ins per week with emoji reactions (nickname, week_number, emoji)
 
 ## Two Book Systems
 
@@ -49,11 +53,12 @@ The transition is per-round: if a round has `round_entries`, the wheel uses thos
 
 ### Public
 - **Home** (`/`) — shows current book (from library via confirmed round_result), or next scheduled book, or active round info
-- **Submit** (`/submit`) — submit a book for the active round (legacy submissions system)
+- **Submit** (`/submit`) — submit a book for the active round. Same nickname can submit multiple books.
 - **Books** (`/books`) — public library view. Shows library books if any exist, otherwise falls back to legacy submission groups. Supports search (`?q=`), status filter (`?status=`), sort (`?sort=title|author|recent`)
 - **Vote/Wheel** (`/vote/{code}`) — wheel spinner page. Fetches books via `/api/round/{id}/wheel-books`
 - **Results** (`/results/{id}`) — RCV results page (legacy)
-- **Schedule** (`/schedule`) — reading schedule
+- **Schedule** (`/schedule`) — reading schedule with week-by-week breakdown, progress bar, and check-in form
+- **Check-in** (`POST /checkin`) — members mark themselves caught up for a reading week with emoji reaction
 
 ### API
 - `GET /api/round/{id}/wheel-books` — returns books for wheel (round_entries first, submissions fallback)
