@@ -13,6 +13,7 @@ Environment=HOME=/home/exedev
 Environment=USER=exedev
 # Set ADMIN_TOKEN to override the auto-generated token:
 # Environment=ADMIN_TOKEN=your-secret-token
+# Environment=BOOKS_API_KEY=your-google-books-api-key
 StandardOutput=journal
 StandardError=journal
 

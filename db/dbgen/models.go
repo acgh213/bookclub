@@ -79,6 +79,8 @@ type Schedule struct {
 	Status          string         `json:"status"`
 	Notes           sql.NullString `json:"notes"`
 	CreatedAt       sql.NullTime   `json:"created_at"`
+	TotalChapters   sql.NullInt64  `json:"total_chapters"`
+	CoverUrl        sql.NullString `json:"cover_url"`
 }
 
 type Submission struct {
@@ -111,4 +113,25 @@ type VoteRanking struct {
 	VoteID       int64 `json:"vote_id"`
 	SubmissionID int64 `json:"submission_id"`
 	Rank         int64 `json:"rank"`
+}
+
+type ReadingWeek struct {
+	ID             int64          `json:"id"`
+	ScheduleID     int64          `json:"schedule_id"`
+	WeekNumber     int64          `json:"week_number"`
+	WeekLabel      sql.NullString `json:"week_label"`
+	StartChapter   sql.NullString `json:"start_chapter"`
+	EndChapter     sql.NullString `json:"end_chapter"`
+	Notes          sql.NullString `json:"notes"`
+	DiscussionDate sql.NullString `json:"discussion_date"`
+	CreatedAt      sql.NullTime   `json:"created_at"`
+}
+
+type Checkin struct {
+	ID         int64          `json:"id"`
+	ScheduleID int64          `json:"schedule_id"`
+	Nickname   string         `json:"nickname"`
+	WeekNumber int64          `json:"week_number"`
+	Emoji      sql.NullString `json:"emoji"`
+	CreatedAt  sql.NullTime   `json:"created_at"`
 }

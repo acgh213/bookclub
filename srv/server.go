@@ -145,6 +145,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/results/", s.handleResults)
 	mux.HandleFunc("/schedule", s.handleSchedule)
 
+// Public API
+	mux.HandleFunc("/checkin", s.handleCheckin)
+
 // API routes
 	mux.HandleFunc("/api/round/", s.handleWheelAPI)
 	mux.HandleFunc("/api/result/", s.handleResultAPI)
@@ -230,19 +233,6 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 				"Nickname":   nickname,
 				"BookTitle":  bookTitle,
 				"BookAuthor": bookAuthor,
-			})
-			return
-		}
-
-		// Duplicate check
-		_, dupErr := s.queries.GetSubmissionByNickname(ctx, dbgen.GetSubmissionByNicknameParams{
-			RoundID:  cr.ID,
-			Nickname: nickname,
-		})
-		if dupErr == nil {
-			s.renderTemplate(w, "submit", map[string]interface{}{
-				"Error": "You've already submitted a book for this round.",
-				"Round": cr,
 			})
 			return
 		}
@@ -564,8 +554,57 @@ func (s *Server) handleSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Build enriched schedule data with weeks and check-ins
+	type WeekWithCheckins struct {
+		Week     dbgen.ReadingWeek
+		Checkins []dbgen.Checkin
+	}
+	type ScheduleEntry struct {
+		Schedule      dbgen.Schedule
+		Weeks         []WeekWithCheckins
+		CurrentWeek   *dbgen.ReadingWeek
+		CurrentWeekNum int64
+		TotalWeeks    int
+		ProgressPct   int
+	}
+
+	var entries []ScheduleEntry
+	for _, sch := range schedule {
+		entry := ScheduleEntry{Schedule: sch}
+		weeks, _ := s.queries.ListReadingWeeks(ctx, sch.ID)
+		for _, w := range weeks {
+			checkins, _ := s.queries.ListCheckinsByWeek(ctx, sch.ID, w.WeekNumber)
+			entry.Weeks = append(entry.Weeks, WeekWithCheckins{
+				Week:     w,
+				Checkins: checkins,
+			})
+		}
+		entry.TotalWeeks = len(weeks)
+		// Find the "current" week: the earliest week that has checkins, or week 1
+		// For progress, find highest week with any checkins
+		currentWeekNum := int64(1)
+		for _, wc := range entry.Weeks {
+			if len(wc.Checkins) > 0 {
+				currentWeekNum = wc.Week.WeekNumber
+			}
+		}
+		entry.CurrentWeekNum = currentWeekNum
+		// Set current week to the one we're on
+		for i := range weeks {
+			if weeks[i].WeekNumber == currentWeekNum {
+				entry.CurrentWeek = &weeks[i]
+				break
+			}
+		}
+		// Calculate progress: use current week's end chapter
+		if entry.CurrentWeek != nil && sch.TotalChapters.Valid && sch.TotalChapters.Int64 > 0 && entry.CurrentWeek.EndChapter.Valid {
+			entry.ProgressPct = calcProgressPct(entry.CurrentWeek.EndChapter.String, sch.TotalChapters.Int64)
+		}
+		entries = append(entries, entry)
+	}
+
 	s.renderTemplate(w, "schedule", map[string]interface{}{
-		"Schedule": schedule,
+		"Entries": entries,
 	})
 }
 
@@ -652,6 +691,18 @@ func (s *Server) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			s.handleAdminUpdateSchedule(w, r, parts[2])
 		} else if len(parts) == 4 && parts[3] == "delete" {
 			s.handleAdminDeleteSchedule(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "weeks" {
+			s.handleAdminReadingWeeks(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "progress" {
+			s.handleAdminUpdateScheduleProgress(w, r, parts[2])
+		} else {
+			http.NotFound(w, r)
+		}
+	case "week":
+		if len(parts) == 3 {
+			s.handleAdminUpdateWeek(w, r, parts[2])
+		} else if len(parts) == 4 && parts[3] == "delete" {
+			s.handleAdminDeleteWeek(w, r, parts[2])
 		} else {
 			http.NotFound(w, r)
 		}
@@ -678,11 +729,31 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Enrich schedule with reading weeks
+	type ScheduleWithWeeks struct {
+		Schedule dbgen.Schedule
+		Weeks    []dbgen.ReadingWeek
+		NextWeek int64
+	}
+	var enrichedSchedule []ScheduleWithWeeks
+	for _, sch := range schedule {
+		weeks, _ := s.queries.ListReadingWeeks(ctx, sch.ID)
+		nextWeek := int64(1)
+		if len(weeks) > 0 {
+			nextWeek = weeks[len(weeks)-1].WeekNumber + 1
+		}
+		enrichedSchedule = append(enrichedSchedule, ScheduleWithWeeks{
+			Schedule: sch,
+			Weeks:    weeks,
+			NextWeek: nextWeek,
+		})
+	}
+
 	s.renderTemplate(w, "admin", map[string]interface{}{
 		"AdminToken": s.adminToken,
 		"Hostname":   s.hostname,
 		"Rounds":     roundData,
-		"Schedule":   schedule,
+		"Schedule":   enrichedSchedule,
 	})
 }
 
@@ -907,6 +978,30 @@ func (s *Server) renderTemplate(w http.ResponseWriter, name string, data map[str
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// calcProgressPct extracts a number from a string like "Chapter 12" or "12" and returns a percentage.
+func calcProgressPct(endChapter string, total int64) int {
+	// Try bare number first
+	if n, err := strconv.ParseInt(strings.TrimSpace(endChapter), 10, 64); err == nil {
+		pct := int(n * 100 / total)
+		if pct > 100 {
+			return 100
+		}
+		return pct
+	}
+	// Try extracting last number from string like "Chapter 12"
+	parts := strings.Fields(endChapter)
+	for i := len(parts) - 1; i >= 0; i-- {
+		if n, err := strconv.ParseInt(parts[i], 10, 64); err == nil {
+			pct := int(n * 100 / total)
+			if pct > 100 {
+				return 100
+			}
+			return pct
+		}
+	}
+	return 0
+}
 
 func generateToken(length int) (string, error) {
 	b := make([]byte, length)

@@ -60,7 +60,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 const createScheduleEntry = `-- name: CreateScheduleEntry :one
 INSERT INTO schedule (round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at
+RETURNING id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at, total_chapters, cover_url
 `
 
 type CreateScheduleEntryParams struct {
@@ -97,6 +97,8 @@ func (q *Queries) CreateScheduleEntry(ctx context.Context, arg CreateScheduleEnt
 		&i.Status,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.TotalChapters,
+		&i.CoverUrl,
 	)
 	return i, err
 }
@@ -216,7 +218,7 @@ func (q *Queries) GetConfig(ctx context.Context, key string) (Config, error) {
 }
 
 const getCurrentReading = `-- name: GetCurrentReading :one
-SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at FROM schedule WHERE status = 'reading' ORDER BY created_at DESC LIMIT 1
+SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at, total_chapters, cover_url FROM schedule WHERE status = 'reading' ORDER BY created_at DESC LIMIT 1
 `
 
 func (q *Queries) GetCurrentReading(ctx context.Context) (Schedule, error) {
@@ -233,6 +235,8 @@ func (q *Queries) GetCurrentReading(ctx context.Context) (Schedule, error) {
 		&i.Status,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.TotalChapters,
+		&i.CoverUrl,
 	)
 	return i, err
 }
@@ -257,7 +261,7 @@ func (q *Queries) GetCurrentRound(ctx context.Context) (Round, error) {
 }
 
 const getNextUpcoming = `-- name: GetNextUpcoming :one
-SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at FROM schedule WHERE status = 'upcoming' ORDER BY created_at ASC LIMIT 1
+SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at, total_chapters, cover_url FROM schedule WHERE status = 'upcoming' ORDER BY created_at ASC LIMIT 1
 `
 
 func (q *Queries) GetNextUpcoming(ctx context.Context) (Schedule, error) {
@@ -274,6 +278,8 @@ func (q *Queries) GetNextUpcoming(ctx context.Context) (Schedule, error) {
 		&i.Status,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.TotalChapters,
+		&i.CoverUrl,
 	)
 	return i, err
 }
@@ -313,7 +319,7 @@ func (q *Queries) GetRoundByVoteCode(ctx context.Context, voteCode string) (Roun
 }
 
 const getScheduleEntry = `-- name: GetScheduleEntry :one
-SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at FROM schedule WHERE id = ? LIMIT 1
+SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at, total_chapters, cover_url FROM schedule WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetScheduleEntry(ctx context.Context, id int64) (Schedule, error) {
@@ -330,6 +336,8 @@ func (q *Queries) GetScheduleEntry(ctx context.Context, id int64) (Schedule, err
 		&i.Status,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.TotalChapters,
+		&i.CoverUrl,
 	)
 	return i, err
 }
@@ -569,7 +577,7 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 }
 
 const listSchedule = `-- name: ListSchedule :many
-SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at FROM schedule ORDER BY 
+SELECT id, round_id, book_title, book_author, suggested_by, meeting_date, reading_progress, status, notes, created_at, total_chapters, cover_url FROM schedule ORDER BY 
     CASE status
         WHEN 'reading' THEN 1
         WHEN 'upcoming' THEN 2
@@ -598,6 +606,8 @@ func (q *Queries) ListSchedule(ctx context.Context) ([]Schedule, error) {
 			&i.Status,
 			&i.Notes,
 			&i.CreatedAt,
+			&i.TotalChapters,
+			&i.CoverUrl,
 		); err != nil {
 			return nil, err
 		}

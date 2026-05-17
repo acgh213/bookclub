@@ -186,45 +186,114 @@
         <div class="card admin-card schedule-admin-card">
             <div class="admin-card-header">
                 <div>
-                    <h4>{{.BookTitle}}</h4>
-                    <p class="book-author">by {{.BookAuthor}}</p>
+                    <h4>{{.Schedule.BookTitle}}</h4>
+                    <p class="book-author">by {{.Schedule.BookAuthor}}</p>
                 </div>
-                <div class="status-badge {{if eq .Status "reading"}}status-reading{{else if eq .Status "upcoming"}}status-upcoming{{else}}status-completed{{end}}">
-                    {{if eq .Status "reading"}}Reading
-                    {{else if eq .Status "upcoming"}}Upcoming
+                <div class="status-badge {{if eq .Schedule.Status "reading"}}status-reading{{else if eq .Schedule.Status "upcoming"}}status-upcoming{{else}}status-completed{{end}}">
+                    {{if eq .Schedule.Status "reading"}}Reading
+                    {{else if eq .Schedule.Status "upcoming"}}Upcoming
                     {{else}}Completed{{end}}
                 </div>
             </div>
             
             <div class="schedule-details">
-                {{if .SuggestedBy.Valid}}<p>Suggested by: {{.SuggestedBy.String}}</p>{{end}}
-                {{if .MeetingDate.Valid}}<p>Meeting: {{.MeetingDate.String}}</p>{{end}}
-                {{if .ReadingProgress.Valid}}<p>Progress: {{.ReadingProgress.String}}</p>{{end}}
-                {{if .Notes.Valid}}<p>{{.Notes.String}}</p>{{end}}
+                {{if .Schedule.SuggestedBy.Valid}}<p>Suggested by: {{.Schedule.SuggestedBy.String}}</p>{{end}}
+                {{if .Schedule.MeetingDate.Valid}}<p>Meeting: {{.Schedule.MeetingDate.String}}</p>{{end}}
+                {{if .Schedule.TotalChapters.Valid}}<p>Total chapters: {{.Schedule.TotalChapters.Int64}}</p>{{end}}
+                {{if .Schedule.Notes.Valid}}<p>{{.Schedule.Notes.String}}</p>{{end}}
             </div>
+
+            {{/* Reading week management */}}
+            <details class="edit-details">
+                <summary>Manage Reading Weeks ({{len .Weeks}})</summary>
+                
+                {{/* Progress settings */}}
+                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.Schedule.ID}}/progress" class="form edit-form" style="margin-bottom: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Total Chapters</label>
+                            <input type="number" name="total_chapters" value="{{if .Schedule.TotalChapters.Valid}}{{.Schedule.TotalChapters.Int64}}{{end}}" placeholder="e.g. 24">
+                        </div>
+                        <div class="form-group">
+                            <label>Cover URL</label>
+                            <input type="url" name="cover_url" value="{{if .Schedule.CoverUrl.Valid}}{{.Schedule.CoverUrl.String}}{{end}}" placeholder="https://...">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-small">Update Progress Info</button>
+                </form>
+
+                {{/* Existing weeks */}}
+                {{if .Weeks}}
+                <div style="margin-bottom: 1rem;">
+                    {{range .Weeks}}
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.02); border-radius: 4px; margin-bottom: 0.25rem;">
+                        <strong style="min-width: 60px;">{{if .WeekLabel.Valid}}{{.WeekLabel.String}}{{else}}Week {{.WeekNumber}}{{end}}</strong>
+                        <span>{{if .StartChapter.Valid}}{{.StartChapter.String}}{{end}}{{if .EndChapter.Valid}} – {{.EndChapter.String}}{{end}}</span>
+                        {{if .DiscussionDate.Valid}}<span style="color: var(--text-secondary); font-size: 0.85rem;">· {{.DiscussionDate.String}}</span>{{end}}
+                        {{if .Notes.Valid}}<span style="color: var(--text-secondary); font-size: 0.85rem;">({{.Notes.String}})</span>{{end}}
+                        <div style="margin-left: auto; display: flex; gap: 0.25rem;">
+                            <form method="POST" action="/admin/{{$.AdminToken}}/week/{{.ID}}/delete" style="margin: 0;" onsubmit="return confirm('Delete this week?');">
+                                <button type="submit" class="btn btn-danger btn-small" style="padding: 0.15rem 0.5rem; font-size: 0.75rem;">×</button>
+                            </form>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+
+                {{/* Add new week */}}
+                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.Schedule.ID}}/weeks" class="form edit-form">
+                    <input type="hidden" name="week_number" value="{{.NextWeek}}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Week Label</label>
+                            <input type="text" name="week_label" placeholder="Week {{.NextWeek}}" value="Week {{.NextWeek}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Start Chapter</label>
+                            <input type="text" name="start_chapter" placeholder="Chapter 1">
+                        </div>
+                        <div class="form-group">
+                            <label>End Chapter</label>
+                            <input type="text" name="end_chapter" placeholder="Chapter 5">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Discussion Date</label>
+                            <input type="text" name="discussion_date" placeholder="May 24, 2026">
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <input type="text" name="notes" placeholder="Optional">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-small">Add Week</button>
+                </form>
+            </details>
 
             <details class="edit-details">
                 <summary>Edit Entry</summary>
-                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.ID}}" class="form edit-form">
+                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.Schedule.ID}}" class="form edit-form">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Book Title</label>
-                            <input type="text" name="book_title" value="{{.BookTitle}}" required>
+                            <input type="text" name="book_title" value="{{.Schedule.BookTitle}}" required>
                         </div>
                         <div class="form-group">
                             <label>Author</label>
-                            <input type="text" name="book_author" value="{{.BookAuthor}}" required>
+                            <input type="text" name="book_author" value="{{.Schedule.BookAuthor}}" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Suggested By</label>
-                            <input type="text" name="suggested_by" value="{{if .SuggestedBy.Valid}}{{.SuggestedBy.String}}{{end}}">
+                            <input type="text" name="suggested_by" value="{{if .Schedule.SuggestedBy.Valid}}{{.Schedule.SuggestedBy.String}}{{end}}">
                         </div>
                         <div class="form-group">
                             <label>Meeting Date</label>
-                            <input type="text" name="meeting_date" value="{{if .MeetingDate.Valid}}{{.MeetingDate.String}}{{end}}">
+                            <input type="text" name="meeting_date" value="{{if .Schedule.MeetingDate.Valid}}{{.Schedule.MeetingDate.String}}{{end}}">
                         </div>
                     </div>
                     
@@ -232,20 +301,20 @@
                         <div class="form-group">
                             <label>Status</label>
                             <select name="status" required>
-                                <option value="upcoming" {{if eq .Status "upcoming"}}selected{{end}}>Upcoming</option>
-                                <option value="reading" {{if eq .Status "reading"}}selected{{end}}>Currently Reading</option>
-                                <option value="completed" {{if eq .Status "completed"}}selected{{end}}>Completed</option>
+                                <option value="upcoming" {{if eq .Schedule.Status "upcoming"}}selected{{end}}>Upcoming</option>
+                                <option value="reading" {{if eq .Schedule.Status "reading"}}selected{{end}}>Currently Reading</option>
+                                <option value="completed" {{if eq .Schedule.Status "completed"}}selected{{end}}>Completed</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Reading Progress</label>
-                            <input type="text" name="reading_progress" value="{{if .ReadingProgress.Valid}}{{.ReadingProgress.String}}{{end}}">
+                            <input type="text" name="reading_progress" value="{{if .Schedule.ReadingProgress.Valid}}{{.Schedule.ReadingProgress.String}}{{end}}">
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Notes</label>
-                        <textarea name="notes" rows="2">{{if .Notes.Valid}}{{.Notes.String}}{{end}}</textarea>
+                        <textarea name="notes" rows="2">{{if .Schedule.Notes.Valid}}{{.Schedule.Notes.String}}{{end}}</textarea>
                     </div>
                     
                     <div class="admin-actions">
@@ -253,7 +322,7 @@
                     </div>
                 </form>
                 
-                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.ID}}/delete" 
+                <form method="POST" action="/admin/{{$.AdminToken}}/schedule/{{.Schedule.ID}}/delete" 
                       onsubmit="return confirm('Delete this schedule entry?');">
                     <button type="submit" class="btn btn-danger btn-small">Delete Entry</button>
                 </form>

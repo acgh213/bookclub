@@ -4,67 +4,123 @@
     <p class="hero-subtitle">Our book club journey – past, present, and future</p>
 </div>
 
-{{if .Schedule}}
-    {{$hasReading := false}}
-    {{$hasUpcoming := false}}
-    {{$hasCompleted := false}}
-    
-    {{range .Schedule}}
-        {{if eq .Status "reading"}}{{$hasReading = true}}{{end}}
-        {{if eq .Status "upcoming"}}{{$hasUpcoming = true}}{{end}}
-        {{if eq .Status "completed"}}{{$hasCompleted = true}}{{end}}
-    {{end}}
+{{if .Entries}}
+    {{range .Entries}}
+    {{if eq .Schedule.Status "reading"}}
+    <div class="card schedule-card reading-card" style="margin-bottom: 2rem;">
+        <div class="status-badge status-reading">Reading Now</div>
+        
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+            {{if .Schedule.CoverUrl.Valid}}
+            <img src="{{.Schedule.CoverUrl.String}}" alt="{{.Schedule.BookTitle}}" 
+                 style="width: 120px; height: 180px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            {{end}}
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="book-title" style="font-size: 1.5rem; margin: 0 0 0.25rem 0;">{{.Schedule.BookTitle}}</h3>
+                <p class="book-author" style="margin: 0 0 0.5rem 0;">by {{.Schedule.BookAuthor}}</p>
+                {{if .Schedule.SuggestedBy.Valid}}
+                <p class="book-submitter">Suggested by {{.Schedule.SuggestedBy.String}}</p>
+                {{end}}
+                {{if .Schedule.MeetingDate.Valid}}
+                <p class="meeting-date">Next meeting: {{.Schedule.MeetingDate.String}}</p>
+                {{end}}
+                {{if .Schedule.Notes.Valid}}
+                <div class="notes-box">{{.Schedule.Notes.String}}</div>
+                {{end}}
+            </div>
+        </div>
 
-    {{if $hasReading}}
-    <div class="schedule-section">
-        <h3 class="section-title">Currently Reading</h3>
-        {{range .Schedule}}
-            {{if eq .Status "reading"}}
-            <div class="card schedule-card reading-card">
-                <div class="status-badge status-reading">Reading Now</div>
-                <h4 class="book-title">{{.BookTitle}}</h4>
-                <p class="book-author">by {{.BookAuthor}}</p>
-                {{if .SuggestedBy.Valid}}
-                <p class="book-submitter">Suggested by {{.SuggestedBy.String}}</p>
-                {{end}}
-                {{if .ReadingProgress.Valid}}
-                <div class="progress-box">
-                    <strong>Progress:</strong> {{.ReadingProgress.String}}
-                </div>
-                {{end}}
-                {{if .MeetingDate.Valid}}
-                <p class="meeting-date">Next meeting: {{.MeetingDate.String}}</p>
-                {{end}}
-                {{if .Notes.Valid}}
-                <div class="notes-box">
-                    <strong>Notes:</strong> {{.Notes.String}}
+        {{/* Progress bar */}}
+        {{if .Schedule.TotalChapters.Valid}}
+        <div style="margin-top: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                <span>Progress</span>
+                <span>{{if .CurrentWeek}}through {{.CurrentWeek.EndChapter.String}}{{end}} of {{.Schedule.TotalChapters.Int64}} chapters · Week {{.CurrentWeekNum}} of {{.TotalWeeks}} ({{.ProgressPct}}%)</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); border-radius: 20px; height: 12px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #FFB6C1, #E6E6FA, #B0E0E6); height: 100%; border-radius: 20px; width: {{.ProgressPct}}%; transition: width 0.5s ease;"></div>
+            </div>
+        </div>
+        {{end}}
+
+        {{/* Reading weeks */}}
+        {{if .Weeks}}
+        <div style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 0.75rem;">Week-by-Week Schedule</h4>
+            <div style="display: grid; gap: 0.5rem;">
+                {{range .Weeks}}
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid {{if .Week.EndChapter.Valid}}#98FF98{{else}}var(--border){{end}};">
+                    <div style="min-width: 70px; font-weight: 700; color: var(--accent);">
+                        {{if .Week.WeekLabel.Valid}}{{.Week.WeekLabel.String}}{{else}}Week {{.Week.WeekNumber}}{{end}}
+                    </div>
+                    <div style="flex: 1;">
+                        {{if .Week.StartChapter.Valid}}
+                        <span style="font-weight: 600;">{{.Week.StartChapter.String}}</span>
+                        {{if .Week.EndChapter.Valid}} – <span style="font-weight: 600;">{{.Week.EndChapter.String}}</span>{{end}}
+                        {{end}}
+                        {{if .Week.DiscussionDate.Valid}}
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;"> · {{.Week.DiscussionDate.String}}</span>
+                        {{end}}
+                        {{if .Week.Notes.Valid}}
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">{{.Week.Notes.String}}</p>
+                        {{end}}
+                    </div>
+                    <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                        {{range .Checkins}}
+                        <span title="{{.Nickname}}" style="cursor: default;">{{if .Emoji.Valid}}{{.Emoji.String}}{{else}}🦦{{end}}</span>
+                        {{end}}
+                    </div>
                 </div>
                 {{end}}
             </div>
-            {{end}}
+
+            {{/* Check-in form */}}
+            <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <form method="POST" action="/checkin" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <input type="hidden" name="schedule_id" value="{{.Schedule.ID}}">
+                    <input type="hidden" name="week_number" value="{{if .CurrentWeek}}{{.CurrentWeek.WeekNumber}}{{else}}1{{end}}">
+                    <input type="text" name="nickname" placeholder="Your name" required
+                           style="padding: 0.4rem 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text); width: 140px;">
+                    <select name="emoji" style="padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text);">
+                        <option value="🦦">🦦 caught up!</option>
+                        <option value="📖">📖 reading</option>
+                        <option value="🌟">🌟 loved it</option>
+                        <option value="😭">😭 crying</option>
+                        <option value="🤔">🤔 confused</option>
+                        <option value="🔥">🔥 so good</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.4rem 1rem;">Check In</button>
+                </form>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 0;">
+                    Mark yourself caught up for {{if .CurrentWeek}}{{if .CurrentWeek.WeekLabel.Valid}}{{.CurrentWeek.WeekLabel.String}}{{else}}Week {{.CurrentWeek.WeekNumber}}{{end}}{{else}}this week{{end}}
+                </p>
+            </div>
+        </div>
         {{end}}
     </div>
     {{end}}
+    {{end}}
 
+    {{/* Upcoming */}}
+    {{$hasUpcoming := false}}
+    {{range .Entries}}{{if eq .Schedule.Status "upcoming"}}{{$hasUpcoming = true}}{{end}}{{end}}
     {{if $hasUpcoming}}
     <div class="schedule-section">
         <h3 class="section-title">Coming Up Next</h3>
-        {{range .Schedule}}
-            {{if eq .Status "upcoming"}}
+        {{range .Entries}}
+            {{if eq .Schedule.Status "upcoming"}}
             <div class="card schedule-card upcoming-card">
                 <div class="status-badge status-upcoming">Upcoming</div>
-                <h4 class="book-title">{{.BookTitle}}</h4>
-                <p class="book-author">by {{.BookAuthor}}</p>
-                {{if .SuggestedBy.Valid}}
-                <p class="book-submitter">Suggested by {{.SuggestedBy.String}}</p>
+                <h4 class="book-title">{{.Schedule.BookTitle}}</h4>
+                <p class="book-author">by {{.Schedule.BookAuthor}}</p>
+                {{if .Schedule.SuggestedBy.Valid}}
+                <p class="book-submitter">Suggested by {{.Schedule.SuggestedBy.String}}</p>
                 {{end}}
-                {{if .MeetingDate.Valid}}
-                <p class="meeting-date">Scheduled for: {{.MeetingDate.String}}</p>
+                {{if .Schedule.MeetingDate.Valid}}
+                <p class="meeting-date">Scheduled for: {{.Schedule.MeetingDate.String}}</p>
                 {{end}}
-                {{if .Notes.Valid}}
-                <div class="notes-box">
-                    <strong>Notes:</strong> {{.Notes.String}}
-                </div>
+                {{if .Schedule.Notes.Valid}}
+                <div class="notes-box">{{.Schedule.Notes.String}}</div>
                 {{end}}
             </div>
             {{end}}
@@ -72,26 +128,28 @@
     </div>
     {{end}}
 
+    {{/* Completed */}}
+    {{$hasCompleted := false}}
+    {{range .Entries}}{{if eq .Schedule.Status "completed"}}{{$hasCompleted = true}}{{end}}{{end}}
     {{if $hasCompleted}}
     <div class="schedule-section">
-        <h3 class="section-title">Completed Books</h3>
+        <h3 class="section-title">Books We've Read</h3>
         <div class="completed-grid">
-            {{range .Schedule}}
-                {{if eq .Status "completed"}}
+            {{range .Entries}}
+                {{if eq .Schedule.Status "completed"}}
                 <div class="card schedule-card completed-card">
                     <div class="status-badge status-completed">Completed</div>
-                    <h4 class="book-title">{{.BookTitle}}</h4>
-                    <p class="book-author">by {{.BookAuthor}}</p>
-                    {{if .SuggestedBy.Valid}}
-                    <p class="book-submitter">{{.SuggestedBy.String}}</p>
+                    {{if .Schedule.CoverUrl.Valid}}
+                    <img src="{{.Schedule.CoverUrl.String}}" alt="{{.Schedule.BookTitle}}" 
+                         style="width: 80px; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;">
                     {{end}}
-                    {{if .MeetingDate.Valid}}
-                    <p class="meeting-date-small">{{.MeetingDate.String}}</p>
+                    <h4 class="book-title">{{.Schedule.BookTitle}}</h4>
+                    <p class="book-author">by {{.Schedule.BookAuthor}}</p>
+                    {{if .Schedule.SuggestedBy.Valid}}
+                    <p class="book-submitter">{{.Schedule.SuggestedBy.String}}</p>
                     {{end}}
-                    {{if .Notes.Valid}}
-                    <div class="notes-box-small">
-                        {{.Notes.String}}
-                    </div>
+                    {{if .Schedule.MeetingDate.Valid}}
+                    <p class="meeting-date-small">{{.Schedule.MeetingDate.String}}</p>
                     {{end}}
                 </div>
                 {{end}}
